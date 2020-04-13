@@ -368,14 +368,18 @@ request_api.searchLocally = function(request, sender, sendResponse) {
           if (params.words && params.words.length>0) {
               var gotHit = true;
               for (j=0;j<params.words.length;j++) {
-                  if (gotHit &&
-                      (   aLog.vulog_kword2 &&
-                          aLog.vulog_kword2.length>0 &&
-                          aLog.vulog_kword2.join(" ").toLowerCase().indexOf(params.words[j])>=0
-                      )
-                    ) {
-                      gotHit = true;
-                  } else {gotHit = false;}
+                if (typeof aLog.vulog_kword2=="string") {
+                  console.warn("aLog stillhas string keyword",aLog) // tem,p bug fix
+                  aLog.vulog_kword2 =aLog.vulog_kword2.split(' ')
+                }
+                if (gotHit &&
+                    (   aLog.vulog_kword2 &&
+                        aLog.vulog_kword2.length>0 &&
+                        aLog.vulog_kword2.join(' ').toLowerCase().indexOf(params.words[j])>=0
+                    )
+                  ) {
+                    gotHit = true;
+                } else {gotHit = false;}
               }
           } else if (!params.words || params.words.length==0){
             gotHit = true;

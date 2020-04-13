@@ -1,6 +1,5 @@
 // Highligher FUNCTIONS from github.com/jeromepl/highlighter
 
-
 const show_highlights = function(){
   if (!parsedPage.props.isiframe){
     chrome.runtime.sendMessage({purl:parsedPage.props.purl, msg:"getMarks"}, function(response) {

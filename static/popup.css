@@ -19,7 +19,7 @@ a {
 	margin:0;
 	left:0;
 	right:0px;
-  border-bottom: 1px solid blue;
+  border-bottom: 3px solid blue;
   font-size: 12px;
   background-color: whitesmoke;
   z-index: 10;
@@ -44,8 +44,6 @@ a {
     border-top-right-radius: 5px;
     border: 1px solid blue;
     padding-top: 3px;
-    padding-bottom: 5px;
-    border-bottom: 0px;
     margin-left: 10px;
     margin-right: 5px;
     width:40px;
@@ -53,11 +51,14 @@ a {
 .tm_opened {
     color:black;
     background-color: white;
+    padding-bottom: 7px;
+    border-bottom: 3px white;
 }
 .tm_closed {
     cursor: pointer;
     color: #2060ff;
     background-color: none;
+    padding-bottom: 5px;
 }
 
 /* ACTION TAB*/

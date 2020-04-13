@@ -158,6 +158,7 @@ var opentab = function(tabName, options={}) {
                 break;
             case 'search':
                 if (args[2]=='history') history.doSearch();
+                if (args[2]=='marks') marks.doSearch();
                 break;
             case 'removeLocalData':
                 removeLocalData();
@@ -191,6 +192,7 @@ var opentab = function(tabName, options={}) {
   document.getElementById('idSearchMarksBox').onkeypress= function (evt) {
       if (evt.keyCode == 13 || evt.keyCode == 32) {
           if (evt.keyCode == 13) evt.preventDefault();
+          marks.doSearch();
           //pop_historian.doSearch("marks");
       }
   }

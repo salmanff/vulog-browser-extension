@@ -197,7 +197,7 @@ const cleanTextForEasySearch = function(aText) {
 	return aText.toLowerCase();
 }
 const renderUrlToCleanedText = function() {
-	addToListAsUniqueItems([], (
+	return addToListAsUniqueItems([], (
 		cleanTextForEasySearch(window.location.href.replace(/=/g,' ').replace(/&/g,' ')).split(' ')),
 		function(x) {return ((x+"").length==1)? "":x } )
 		// words in title url query (not www) author description url
