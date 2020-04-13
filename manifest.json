@@ -1,0 +1,31 @@
+{
+  "name": "VuLog for freezr",
+  "short_name": "VuLog",
+  "description": "An app for logging all the pages you visit on chrome.",
+  "version": "0.0.2",
+  "manifest_version": 2,
+  "browser_action": {
+    "default_title": "Logging web page views",
+    "default_icon": "vulog logo v1.png",
+    "default_popup": "static/popUp.html"
+  },
+  "permissions":[
+      "tabs",
+      "contextMenus",
+      "storage" ,
+      "<all_urls>"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["scripts/pageData.js", "scripts/parsePage.js", "scripts/highlight.js","scripts/load_highlights.js"],
+      "all_frames": true
+    }
+  ],
+  "background": {
+      "scripts": ["freezrPublic/freezr_core.js" ,"freezrPublic/jlos-frozen.js", "scripts/highlight.js" ,  "scripts/background.js"]
+  },
+
+  "icons": { "16": "static/vulog_logo_16.png", "48": "static/vulog_logo_48.png", "128": "static/vulog_logo_128.png" }
+
+}
