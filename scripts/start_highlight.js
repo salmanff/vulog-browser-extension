@@ -17,7 +17,7 @@ if (selectionString) { // If there is text selected
         container = container.parentNode;
     }
 
-    var color = "yellow"; // todo: Get from preferences
+    var color = "yellowgreen"; // todo: Get from preferences
     //onsole.log("Vu-highlights storing...: ",selection," from ",window.location.pathname)
         let the_highlight = {
             h_date: new Date().getTime(),
@@ -32,7 +32,7 @@ if (selectionString) { // If there is text selected
         chrome.runtime.sendMessage({purl:parsedPage.props.purl, highlight:the_highlight, msg:"newHighlight"},
           function(resp) {
             if (resp.error) console.warn("Error sending info to background ",parsedPage)
-            highlight(selectionString, container, selection, color);
+            highlightFromSelection  (selectionString, container, selection, color);
           }
         );
 }

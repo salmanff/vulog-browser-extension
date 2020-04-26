@@ -2,14 +2,15 @@
 
 
 function VuPageData() {
-	this.props = getAllMetatags();
+	this.props = getAllPageTags();
 }
 
-const getAllMetatags = function(options={ignore_unknowns:true}) {
+const getAllPageTags = function(options={ignore_unknowns:true}) {
+	// initiates parsedTags and gets all meta data assuming there is a document in window
 	let parsedTags = {
 		url: window.location.href,
 		isiframe: (window.self !== window.top),
-		purl: currentUrlPurePath(),
+		purl: pureUrlify(window.location.href),
 		hasBody: haveBody(),
 		referrer:document.referrer,
 		vulog_timestamp: new Date().getTime(),
@@ -22,67 +23,16 @@ const getAllMetatags = function(options={ignore_unknowns:true}) {
 	}
 
 	if (parsedTags.hasBody) {
-		const EMPTY_STR = ['type','title','author','description','published','modified','domain_app']
-		EMPTY_STR.forEach(tag => parsedTags[tag]='')
-		const EMPTY_ARRS = ['keywords','temp_unknown_tags','vulog_visit_details']
-		EMPTY_ARRS.forEach(tag => parsedTags[tag]=[]);
-
-		// console 2020 todo review all tags
-		parsedTags.other= {};
-		parsedTags.vuLog_height= document.getElementsByTagName("BODY")[0].scrollHeight;
-		//parsedTags.vulog_ttl_time= 0,
-		//parsedTags.vulog_max_scroll= 0,
-		//parsedTags.vulog_time_incr=0,
-		//parsedTags.vulog_visit_details=[{'time':0, 'date':parsedTags.vulog_timestamp}];
 		if (document.getElementsByTagName('title') && document.getElementsByTagName('title')[0]) parsedTags.title = document.getElementsByTagName('title')[0].innerText;
 
-		if (!parsedTags.isiframe) parsedTags.vulog_kword2 = renderUrlToCleanedText();
-
-		// get all meta data
 		const all_metas = document.getElementsByTagName('meta');
-		let m_name;
-		if (all_metas && all_metas.length>0) {
-			for (let i=0; i<all_metas.length; i++) {
-				m = all_metas[i];
-				m_name = m.getAttribute("name");
-				if (!m_name) m_name = m.getAttribute("property");
-				if (m_name && m.getAttribute("content") ) {
-					//onsole.log("got meta "+m_name+": "+m.getAttribute("content"));
-					if ( EQUIV_NAMES[m_name]) {
-						if( m_name.indexOf('vulog')==0 ) {
-							console.warn("some body is trying to play nasty tricks on vulog. ;)")
-						} else if (['keywords'].indexOf(EQUIV_NAMES[m_name])>-1) { // Add all unique words
-							parsedTags[ EQUIV_NAMES[m_name]] =  addToListAsUniqueItems(parsedTags[ EQUIV_NAMES[m_name]], cleanTextForEasySearch(m.getAttribute("content")).split(" ") );
-						} else if ( EQUIV_NAMES[m_name]=='domain_app') {
-							parsedTags.domain_app = (m_name == 'application-name' || !parsedTags.domain_app)? m.getAttribute("content"):parsedTags.domain_app;
-						} else if ( EQUIV_NAMES[m_name] == m_name){
-							parsedTags[m_name] =  m.getAttribute("content");
-						} else if (!parsedTags[ EQUIV_NAMES[m_name]]) {
-							parsedTags[ EQUIV_NAMES[m_name]] =  m.getAttribute("content");
-						}
-						parsedTags.vulog_kword2 =  addToListAsUniqueItems(parsedTags.vulog_kword2, cleanTextForEasySearch(m.getAttribute("content")).split(' '));
-					} else if ( IGNORE_NAMES.indexOf(m_name)<0) {
-						parsedTags.other[m_name.split('.').join('_')] = m.getAttribute("content");
-						if ( OTHER_NAMES.indexOf(m_name)<0  ) parsedTags.temp_unknown_tags.push(m_name);
-					}
-				}
-			}
-		}
 
-		parsedTags.domain_app = parsedTags.domain_app? (parsedTags.domain_app.toLowerCase()) : ( domainAppFromHost(window.location.hostname));
-		EMPTY_STR.forEach(tag => {if (parsedTags[tag]=='') delete parsedTags[tag]})
-		EMPTY_ARRS.forEach(tag => {if(parsedTags[tag].length==0) delete parsedTags[tag]});
+		parsedTags = addMetaTotags(parsedTags,all_metas)
 
-		if (!parsedTags.isiframe){ // ie is masterpage
-			parsedTags.fj_modified_locally = new Date().getTime();
-			parsedTags.vulog_sub_pages = []
-		}
-
-		let [vulog_3pjs, vulog_3pimg] = get3rdPartyLinks()
-		parsedTags.vulog_3pjs = vulog_3pjs
-		parsedTags.vulog_3pimg = vulog_3pimg
-
+		parsedTags.vuLog_height= document.getElementsByTagName("BODY")[0].scrollHeight;
 	}
+	let [vulog_3pjs, vulog_3pimg] = get3rdPartyLinks()
+	parsedTags.vulog_3rdParties = {js:vulog_3pjs, img:vulog_3pimg}
 
 	return parsedTags;
 }
@@ -160,17 +110,77 @@ const IGNORE_NAMES = [
 	'edt','twitter:image:alt','article:tag','des','nyt-collection:display-name','nyt-collection:identifier',
 	'nyt-collection:url','nyt-collection:uri','nyt-collection:tone','nyt-collection:type','CN','CT','dfp-ad-unit-path','dfp-amazon-enabled'
 ]
+const addMetaTotags = function (parsedTags,all_metas,options={ignore_unknowns:true}) {
+	// assumes title url purl ... have already been added to ParsedTags and adds other meta objects
+	const EMPTY_STR = ['type','author','description','published','modified','domain_app']
+	EMPTY_STR.forEach(tag => parsedTags[tag]='')
+	const EMPTY_ARRS = ['keywords','temp_unknown_tags','vulog_visit_details']
+	EMPTY_ARRS.forEach(tag => parsedTags[tag]=[]);
+	parsedTags.other= {};
+
+	// console 2020 todo review all tags
+	parsedTags.vulog_kword2 = renderUrlToCleanedText(parsedTags.url);
+	parsedTags.vulog_kword2 = addToListAsUniqueItems(parsedTags.vulog_kword2, renderUrlToCleanedText(parsedTags.referrer))
+
+	// get all meta data
+	let m_name;
+	if (all_metas && all_metas.length>0) {
+		for (let i=0; i<all_metas.length; i++) {
+			m = all_metas[i];
+			m_name = m.getAttribute("name");
+			if (!m_name) m_name = m.getAttribute("property");
+			if (m_name && m.getAttribute("content") ) {
+				//onsole.log("got meta "+m_name+": "+m.getAttribute("content"));
+				if ( EQUIV_NAMES[m_name]) {
+					if( m_name.indexOf('vulog')==0 ) {
+						console.warn("some body is trying to play nasty tricks on vulog. ;)")
+					} else if (['keywords'].indexOf(EQUIV_NAMES[m_name])>-1) { // Add all unique words
+						parsedTags[ EQUIV_NAMES[m_name]] =  addToListAsUniqueItems(parsedTags[ EQUIV_NAMES[m_name]], cleanTextForEasySearch(m.getAttribute("content")).split(" ") );
+					} else if ( EQUIV_NAMES[m_name]=='domain_app') {
+						parsedTags.domain_app = (m_name == 'application-name' || !parsedTags.domain_app)? m.getAttribute("content"):parsedTags.domain_app;
+					} else if ( EQUIV_NAMES[m_name] == m_name){
+						parsedTags[m_name] =  m.getAttribute("content");
+					} else if (!parsedTags[ EQUIV_NAMES[m_name]]) {
+						parsedTags[ EQUIV_NAMES[m_name]] =  m.getAttribute("content");
+					}
+					parsedTags.vulog_kword2 =  addToListAsUniqueItems(parsedTags.vulog_kword2, cleanTextForEasySearch(m.getAttribute("content")).split(' '));
+				} else if ( IGNORE_NAMES.indexOf(m_name)<0 && !options.ignore_unknowns) {
+					parsedTags.other[m_name.split('.').join('_')] = m.getAttribute("content");
+					if ( OTHER_NAMES.indexOf(m_name)<0  ) parsedTags.temp_unknown_tags.push(m_name);
+				}
+			}
+		}
+	}
+
+	parsedTags.domain_app = parsedTags.domain_app? (parsedTags.domain_app.toLowerCase()) : ( domainAppFromUrl(parsedTags.url));
+	EMPTY_STR.forEach(tag => {if (parsedTags[tag]=='') delete parsedTags[tag]})
+	EMPTY_ARRS.forEach(tag => {if(parsedTags[tag].length==0) delete parsedTags[tag]});
+
+	if (!parsedTags.isiframe){ // ie is masterpage
+		parsedTags.fj_modified_locally = new Date().getTime();
+		parsedTags.vulog_sub_pages = []
+	}
+
+	return parsedTags
+}
 
 // Utility functions
+const domainAppFromUrl = function (url){
+  if (!url) return url
+  let temp = url.split('://')
+  if (temp.length>1) temp.shift()
+  temp = temp[0].split('/')[0]
+  temp = temp.split('.')
+  while (temp.length>2) {temp.shift()}
+  temp = temp.join('.')
+  return temp
+}
 const pureUrlify = function(aUrl) {
 	if (aUrl.indexOf('#')>0) aUrl = aUrl.slice(0,aUrl.indexOf('#'));
 	if (aUrl.slice(-1)=="/") {aUrl = aUrl.slice(0,-1);}
 	return aUrl.trim();
 }
-const currentUrlPurePath = function() {
-  //
-  return pureUrlify(window.location.href)
-}
+
 const corePurl = function(aUrl) {
 	aUrl = pureUrlify(aUrl)
 	return aUrl.split('?')[0]
@@ -183,7 +193,7 @@ const addToListAsUniqueItems = function(aList,items, transform) {
 	if (typeof items == "string" || !isNaN(items) ) items = [items];
 	if (!Array.isArray(items)) {throw new Error ("items need to be a list")}
 	if (transform) items = items.map(transform)
-	items.forEach(function(anItem) {if (anItem && anItem!=" " && aList.indexOf(anItem) < 0) aList.push(anItem);});
+	items.forEach(function(anItem) {if (anItem && anItem!=" " && aList.indexOf(anItem) < 0 && anItem.length>0) aList.push(anItem);});
 	return aList;
 }
 const cleanTextForEasySearch = function(aText) {
@@ -196,9 +206,9 @@ const cleanTextForEasySearch = function(aText) {
 	seps.forEach(function (aSep) { aText = aText.split(aSep).join(' ') } )
 	return aText.toLowerCase();
 }
-const renderUrlToCleanedText = function() {
+const renderUrlToCleanedText = function(aUrl) {
 	return addToListAsUniqueItems([], (
-		cleanTextForEasySearch(window.location.href.replace(/=/g,' ').replace(/&/g,' ')).split(' ')),
+		cleanTextForEasySearch(aUrl.replace(/=/g,' ').replace(/&/g,' ')).split(' ')),
 		function(x) {return ((x+"").length==1)? "":x } )
 		// words in title url query (not www) author description url
 }
@@ -206,12 +216,11 @@ const haveBody = function(){
 	return (document.getElementsByTagName("BODY") && document.getElementsByTagName("BODY")[0] && document.getElementsByTagName("BODY")[0].scrollHeight)?true:false
 }
 const getCookies = function(){
-	let cookies = {};
+	let cookies = [];
 	let carr = document.cookie.split('; ');
-	carr.forEach((oneC) => {
-		let splits = oneC.split('=');
-		cookies[splits[0].replace(/\./g,"_")] = splits[1]
-	})
+	carr.forEach(oneC => {if (oneC) cookies.push(oneC.split('=')[0])})
+	//old:	let splits = oneC.split('='); cookies[splits[0].replace(/\./g,"_")] = splits[1]
+
   return cookies;
 }
 const domainAppFromHost = function(host) {
@@ -231,7 +240,10 @@ const get3rdPartyLinks = function(){
 	}
 	return [vulog_3pjs, vulog_3pimg]
 }
-
+const currentUrlPurePath = function() {
+  //
+  return pureUrlify(window.location.href)
+}
 
 const startsWith  = function (longWord, portion) {
 	return (typeof longWord == 'string' && longWord.indexOf(portion) == 0)

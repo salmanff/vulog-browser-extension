@@ -118,7 +118,7 @@ const record_focused_increment = function(){
 }
 const record_interval = function() {
 	//onsole.log("record mid interval")
-	// todo - get new links
+	// todo - get new links  from page?
 	let nowTime = new Date().getTime();
 	focus_timer.mid = nowTime;
 	if (!focus_timer.vid_start && videoIsPlaying()) focus_timer.vid_start=nowTime;
@@ -131,7 +131,7 @@ const record_interval = function() {
 
 	chrome.runtime.sendMessage({focus_timer:focus_timer, height_specs:height_specs, purl:parsedPage.props.purl, msg:"updatepage", props:parsedPage.props},
 		function(resp) {
-			if (resp.error) console.warn("Error sending info to background ",parsedPage)
+			if (resp && resp.error) console.warn("Error sending info to background ",parsedPage)
 		}
 	);
 }

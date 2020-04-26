@@ -34,9 +34,9 @@ var marks = {
     dg.el('idSearchMarksBox').textContent=''
     this.doSearch();
   },
-  doSearch: function () {
+  doSearch: function (reinit) {
     let searchTerms = this.removeSpaces(dg.el('idSearchMarksBox').textContent).toLowerCase()
-    if (mark_search.last_words_searched!=searchTerms) this.init_state();
+    if (mark_search.last_words_searched!=searchTerms || reinit) this.init_state();
     mark_search.last_words_searched=searchTerms;
     mark_search.star_filters = []
     MAIN_STARS.forEach(aStar => {if (dg.el('click_filterStar_'+aStar+'_0').className.includes(" chosen-star")) mark_search.star_filters.push(aStar)} );
@@ -89,16 +89,17 @@ var marks = {
       more_hist.appendChild(dg.span({style:{'margin-right':'20px'}},' '))
     }
     if (nomore) {
-      more_hist.appendChild(dg.span({style:{'margin-left':'20px',color:MCSS.LIGHT_GREY}},' No local items'))
+      more_hist.appendChild(dg.span({style:{'margin-left':'20px',color:MCSS.LIGHT_GREY}},' No more items stored locally'))
       if (false && freezr_app_token) {more_hist.appendChild(dg.span({style:{'margin-left':'20px',color:'cornflowerblue',cursor:'pointer'},
-        onclick:function(){alert('todo later ')}
-        //console.log
-        },
-        'Get more online items'))}
+        onclick:function(){
+          console.log("todo - find online")
+        }
+      },
+      'Get more online items'))}
     } else {
       more_hist.appendChild(dg.span({
-        style:{color:'cornflowerblue',cursor:'pointer','margin-left':'20px'},
-        onclick:function() {history.doSearch()}
+        style:{color:'cornflowerblue',cursor:'pointer','margin-left':'20px','padding-bottom':'20px'},
+        onclick:function() {marks.doSearch()}
       },'More items'))
     }
     return resultsdiv
@@ -188,8 +189,8 @@ var marks = {
               if (!response || response.error) {
                 showWarning((response? response.error: "Error changing mark."))
               } else {
-                let newchosen = ((chosen=="unchosen")?"chosen":"unchosen")
-                e.target.className = 'fa fa-'+aStar+' littlestars '+(newchosen)+'-star';
+                chosen = ((chosen=="unchosen")?"chosen":"unchosen")
+                e.target.className = 'fa fa-'+aStar+' littlestars '+(chosen)+'-star';
               }
             })
           }
@@ -206,7 +207,7 @@ var marks = {
         transition:'height 0.3s ease-out',
         width: '500px'
       }},dg.div({style:{'margin-top':'3px', color:'darkgray','overflow':'hidden','text-overflow':'ellipsis','height':'16px'}},
-        dg.a({href:alog.domain_app},alog.purl)))
+        dg.a({href:alog.purl,target:'_blank'},alog.purl)))
 
     if (alog.description) {
       detailsdiv.appendChild(dg.div(
@@ -313,7 +314,6 @@ var marks = {
       return (Math.floor(aTime/60000)>0? (Math.floor(aTime/60000)+"mins" ):"" )+(Math.round((aTime%60000)/1000,0))+"s"
   },
   getdomain: function(aUrl) {
-      // 8 represents "h t t p s://" - todo - make algo mroe robust
       if(!aUrl) return "Missing aUrl";
       var start = aUrl.indexOf("//")+2
       var stop = aUrl.slice(start).indexOf("/");

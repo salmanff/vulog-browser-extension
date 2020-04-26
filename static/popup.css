@@ -3,6 +3,9 @@
     vulog brownser extension pop up
     version 0.0.2 - march 2020
 */
+body {
+  font-family: "Lucida Sans Unicode", "Helvetica Neue", "Arial", sans-serif;
+}
 a {
     color: '#0000AB';
     text-decoration: none;
@@ -24,7 +27,7 @@ a {
   background-color: whitesmoke;
   z-index: 10;
   top:0;
-  height: 28px;
+  height: 32px;
 }
 #top_logo{
     width: 45px;
@@ -34,8 +37,8 @@ a {
 #logo_text{
     font-weight: bold;
     font-size: 14px;
-    margin-left: -5px;
-    margin-right: 30px;
+    margin-right: 20px;
+    color:yellowgreen;
 }
 .top_menu_item {
     padding-left: 10px;
@@ -59,6 +62,7 @@ a {
     color: #2060ff;
     background-color: none;
     padding-bottom: 5px;
+    border-bottom: 0;
 }
 
 /* ACTION TAB*/
@@ -111,14 +115,14 @@ a {
   content: "\f10d";
   padding-right: 3px;
   font-size: 18px;
-  color: cornflowerblue;
+  color: yellowgreen;
 }
 .quote_right:after {
   font-family: FontAwesome;
   content: "\f10e";
   padding-left: 3px;
   font-size: 18px;
-  color: cornflowerblue;
+  color: yellowgreen;
 }
 .quote_inner {
   width:380px;
@@ -127,7 +131,7 @@ a {
   padding:5px;
   color:white;
   font-weight:bold;
-  background-color: cornflowerblue;
+  background-color: yellowgreen;
 }
 .quote_close {
   float:right;
@@ -189,7 +193,7 @@ a {
     color:lightgrey;
 }
 .chosen-star {
-    color:indianred;
+    color:yellowgreen;
 }
 .stars{
     margin:10px;
@@ -214,7 +218,7 @@ a {
     margin-right: 3px;
     width:420px;
     background-color: white;
-    color:indianred;
+    color:yellowgreen;
     font-weight: bold;
     -webkit-user-modify: read-write;
     display: inline-block;

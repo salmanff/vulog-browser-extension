@@ -418,7 +418,6 @@ freezr.utils.longDateFormat = function(aDateNum) {
 }
 freezr.utils.testCallBack = function(returnJson) {
   returnJson = freezer_restricted.utils.parse(returnJson);
-  console.log("testCallBack - return json is ",returnJson);
 }
 
 /*  ==================================================================
@@ -443,7 +442,7 @@ freezer_restricted.permissions= {};
       } else {
         postData = data;
       }
-      // todo - add posting pictures
+      // todo - add posting pictures (???)
 
   	freezer_restricted.connect.send(url, postData, callback, "POST", contentType);
   };

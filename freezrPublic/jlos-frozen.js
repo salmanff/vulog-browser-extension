@@ -537,9 +537,9 @@ jlos.prototype.updateFullRecord = function(theList, anItem) {
 		throw Error("could not find item to update")
 	}
 }
-jlos.prototype.markDeleted = function(theList, recordIdOrTempLocalId, options={}) {
+jlos.prototype.markDeleted = function(theList, anItem, options={}) {
 	// finds the record using criteria, and updated
-	let idIndex = this.idIndex(theList, {'_id':recordIdOrTempLocalId,'fj_local_temp_unique_id':recordIdOrTempLocalId}, (options.idType =='localtemp'))
+  let idIndex = this.idIndex(theList, anItem, (options.idType =='both'))
 	if (idIndex>=0) {
 		if ((options && options.removeAllFields) || !this.data[theList][idIndex]._id ){
       this.data[theList].splice(idIndex,1)
@@ -564,7 +564,6 @@ jlos.prototype.markDeleted = function(theList, recordIdOrTempLocalId, options={}
 
 jlos.prototype.idIndex = function(theList, anItem, searchLocalTempIds) {
 	var refList = this.data[theList];
-	//onsole.log("this.idIndex  "+theList+" len is "+refList.length+" checking "+( anItem? anItem._id: "no item") );
 	theIndex = -1
 	if (refList && refList.length>0) {
 		for (var i=0; i<refList.length; i++) {

@@ -36,7 +36,7 @@ function resetVars() {
     alreadyHighlighted = true;
 }
 
-function highlight(selString, container, selection, color) {
+function highlightFromSelection(selString, container, selection, color) {
     resetVars();
 
     selectionString = selString;
@@ -59,7 +59,7 @@ function highlight(selString, container, selection, color) {
 
     // Step 1 + 2:
     recursiveWrapper(container);
-    color = color ? color : "yellow";
+    color = color ? color : "yellowgreen";
     var replacements = getReplacements(color);
 
     // Step 3:
@@ -173,6 +173,11 @@ function recursiveWrapper(container) {
     });
 }
 
+function setHighlightsToColor(colorOrInherit) {
+  Array.from(document.getElementsByClassName(HIGHLIGHT_CLASS)).forEach((ahigh) => {
+    ahigh.style['background-color'] = colorOrInherit ||'inherit'
+  })
+}
 
 /** UTILS **/
 

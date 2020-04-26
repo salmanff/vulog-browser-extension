@@ -17,9 +17,9 @@
 
     <div id="topBar">
         <img id="top_logo" src="/vulog logo v1.png"/>
-        <span id="logo_text">VuLog</span>
+        <span id="logo_text">vulog</span>
         <span id="click_gototab_action" class="top_menu_item tm_opened">Current</span>
-        <span id="click_gototab_trackers" class="top_menu_item tm_opened">Trackers</span>
+        <span id="click_gototab_trackers" class="top_menu_item tm_closed">Trackers</span>
         <span id="click_gototab_history" class="top_menu_item tm_closed"> History</span>
         <span id="click_gototab_marks" class="top_menu_item tm_closed"> Marks</span>
         <span id="click_gototab_more" class="top_menu_item tm_closed"> More</span>
@@ -33,7 +33,7 @@
 
                 <div style="margin-top:10px;"> &nbsp; </div>
                 <div class="separator" > &nbsp; </div>
-                <div id="thispage_title" class="page_title">Add tags, marks or notes to this page:</div>
+                <div id="thispage_title" class="page_title">Marks: Add tags, bookmarks or notes to this page:</div>
                 <div id="current_tags"> </div>
 
                 <div id="userMarks_area" class="user_marks_area" style="text-align:center">
@@ -51,11 +51,11 @@
                 <br/>
 
                     <div class="inputHolder">
-                      <div class="vulog_title_emph">Tags</div>
+                      <div class="vulog_title_emph"><span class="fa fa-tags littlestars unchosen-star" id="currentmarks_tags_0"></span>&nbsp; Tags</div>
                       <div id="idTagBox" class="inputBox" contenteditable="true" data-placeholder=" &nbsp; Tags"></div>
                     </div>
                     <div class="inputHolder">
-                      <div class="vulog_title_emph">Notes</div>
+                      <div class="vulog_title_emph"><span class="fa fa-sticky-note littlestars unchosen-star" id="currentmarks_notes_0">></span>&nbsp; Notes</div>
                       <div id="idNotesBox" class="inputBox" contenteditable="true" data-placeholder=" &nbsp; Notes"></div>
                     </div>
 
@@ -64,9 +64,11 @@
                     </div>
 
                     <div id="highlights_area" class="inputHolder" style="display:none">
+                      <input id="inputFileToLoad" type="file" />
+                        <div id="imgTest"></div>
                     </div>
 
-                    <div id="notloggedinmsg">
+                    <div id="notloggedinmsg" class="inputHolder">
                       You are not logged in. Please press the freezr button (top right) to log in to a CEPS compatible personal data store.<br/>
                       More info at <a target='_blank' href='http://www.salmanff.com/ppage/2020-3-15-Why-CEPS-Matters'>salmanff/ceps</a>
                     </div>
@@ -130,11 +132,16 @@
                 <div class="separator" > &nbsp; </div>
                 <br/>
                 <div class="moreTabText">
-                 To remove your history data from this device, press below. Note that the history uploaded to your freezr will remain. (To log in or log out to your freezr, press the freezr button on the top right.)
+                 To remove your history and marks from this device, press below. Note that the history uploaded to your freezr will remain. (To log in or log out to your freezr, press the freezr button on the top right.)
                 </div>
                 <div class="moreTabButts">
-                    <span class="fa topBut_Mobile fa-times" id="click_removeLocalData_0" ></span>
-                    <span id="click_removeLocalData_1" class="more_tab_butt_text"> Remove locally stored data </span>
+                    <span class="fa topBut_Mobile fa-trash" id="click_removeLocalData_0" ></span>
+                    <span id="click_removeLocalData_1" class="more_tab_butt_text"> Remove ALL locally stored data </span>
+                </div>
+                <br/>
+                <div class="moreTabButts">
+                    <span class="fa topBut_Mobile fa-trash" id="click_removeHistoryOnly_0" ></span>
+                    <span id="click_removeHistoryOnly_1" class="more_tab_butt_text"> Remove locally history only. (Your marks will stay.)</span>
                 </div>
 
                 <div class="separator" > &nbsp; </div>

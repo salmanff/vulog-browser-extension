@@ -1,27 +1,55 @@
 // Highligher FUNCTIONS from github.com/jeromepl/highlighter
 
-const show_highlights = function(){
+
+const initiate_highlights = function(){
   if (!parsedPage.props.isiframe){
-    chrome.runtime.sendMessage({purl:parsedPage.props.purl, msg:"getMarks"}, function(response) {
+    chrome.runtime.sendMessage({purl:parsedPage.props.purl, msg:"getMarkFromVulog"}, function(response) {
   		//onsole.log(response)
-  		if (response.error) {
-  			console.warn(response.error)
-  		} else if (response.mark && response.mark.vulog_highlights) {
-        let display_errs=[];
-  			response.mark.vulog_highlights.forEach((a_high, idx) => {
-          //setTimeout(function(){load_highlights(a_high)},(10000*idx))
-          if (!load_highlights(a_high)) display_errs.push({err:true, idx:idx});
-          else if (a_high.display_err) display_errs.push({err:false, idx:idx})
-        });
-        if (display_errs.length>0) chrome.runtime.sendMessage({purl:parsedPage.props.purl, msg:"marksDisplayErrs", display_errs:display_errs}, function(response) {
-          //onsole.log(response)
-        })
-  		}
+      let showthis = null
+  		if (!response || response.error) {
+  			console.warn(response? response.error:"No response from vulog extension - internal error?")
+  		} else {
+        if (response.mark) {
+          vulog_overlay_global.self_mark = response.mark
+          showthis = 'self_mark'
+        }
+        if (response.redirectedmark) {
+          vulog_overlay_global.redirect_mark = response.redirectedmark
+          showthis = 'redirect_mark'
+        }
+      }
+      let display_errs = show_highlights(showthis);
+      if (display_errs.length>0){
+        if (showthis == 'self_mark') {
+          chrome.runtime.sendMessage({purl:parsedPage.props.purl, msg:"marksDisplayErrs", display_errs:display_errs}, function(response) {
+            //onsole.log(response)
+          })
+        } else {
+          console.warn(display_errs)
+        }
+      }
+      if (response.redirectedmark) show_vulog_overlay()
+
   	});
   }
 }
+const show_highlights = function(showthis) {
+  let display_errs=[], color = 'yellowgreen';
+  if (showthis) {
+    if (showthis == 'redirect_mark') color = 'yellow'
+    if (vulog_overlay_global[showthis].vulog_highlights.length>0){
+      let highlights = JSON.parse(JSON.stringify(vulog_overlay_global[showthis].vulog_highlights))
+      highlights.forEach((a_high, idx) => {
+        if (!load_highlights(a_high, color)) display_errs.push({err:true, idx:idx});
+        else if (a_high.display_err) display_errs.push({err:false, idx:idx})
+      });
+      vulog_overlay_global.shown_highlight = showthis
+    }
+  }
+  return display_errs
+}
 
-function load_highlights(highlightVal) {
+function load_highlights(highlightVal, color) {
     var selection = {
         anchorNode: elementFromQuery(highlightVal.anchorNode,"anchor",highlightVal.string),
         anchorOffset: highlightVal.anchorOffset,
@@ -33,13 +61,12 @@ function load_highlights(highlightVal) {
 
     var selectionString = highlightVal.string;
     var container = elementFromQuery(highlightVal.container);
-    var color = highlightVal.color;
 
     if (!selection.anchorNode || !selection.focusNode || !container) {
       console.warn("NO Anchor or focusNode...",selection)
         return false;
     } else {
-        let success = highlight(selectionString, container, selection, color); // returns true on success or false on err
+        let success = highlightFromSelection(selectionString, container, selection, color); // returns true on success or false on err
         if (!success) console.warn("could not load highlight ",selection)
         return success
     }
@@ -90,9 +117,9 @@ if (
     document.readyState === "complete" ||
     (document.readyState !== "loading" && !document.documentElement.doScroll)
 ) {
-  show_highlights();
+  initiate_highlights();
 } else {
-  document.addEventListener("DOMContentLoaded", show_highlights);
+  document.addEventListener("DOMContentLoaded", initiate_highlights);
 }
 
 

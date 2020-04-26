@@ -25,9 +25,9 @@ const history = {
     dg.el('idSearchHistoryBox').textContent=''
     this.doSearch();
   },
-  doSearch: function () {
+  doSearch: function (reinit) {
     let searchTerms = this.removeSpaces(dg.el('idSearchHistoryBox').textContent).toLowerCase()
-    if (search_state.last_words_searched!=searchTerms) this.init_state();
+    if (search_state.last_words_searched!=searchTerms || reinit) this.init_state();
     search_state.last_words_searched=searchTerms;
 
     var query_params = {
@@ -184,9 +184,10 @@ const history = {
       dg.span({className:'fa-chevron-right hist_details_collapse',
               style:{color:(alog._id? "green":"cornflowerblue")}}),
 
-      ((time_spent? ("Est. time "+ this.timeSpentify(time_spent)):"") +
-       (alog.vulog_max_scroll? " - Scroll:"+Math.round(100*alog.vulog_max_scroll/alog.vuLog_height)+"% ": "") +
-       (" - Left "+ttl_cookies+" cookies, using "+tracker_num+" tracker"+(tracker_num!=1?"s":""))
+      ((time_spent? ("Est. time "+ this.timeSpentify(time_spent)+" - "):"") +
+       (alog.vulog_max_scroll? "Scroll:"+Math.round(100*alog.vulog_max_scroll/alog.vuLog_height)+"% ": "") +
+       ((ttl_cookies || tracker_num)?("Left "+ttl_cookies+" cookies, using "+tracker_num+" tracker"+(tracker_num!=1?"s":"") +" - "):"")
+       +"See details"
       )
     )
     return thediv;
@@ -211,13 +212,6 @@ const history = {
     alog.vulog_visit_details.forEach(visit => detailsdiv.appendChild(dg.div(dg.b("Visited "),"from ",vtime(visit.start)," to ",vtime(visit.end || visit.mid),(visit.vid_start? (" - Watched Video for "+wtime((visit.end || visit.mid)-visit.vid_start)):""  ))))
 
     detailsdiv.appendChild(dg.div(
-      dg.span(
-        {style:{color:'cornflowerblue', 'margin-right':'10px', cursor:'pointer'},
-         onclick: function() { opentab("trackers", {log: alog})}
-        },
-        "Show tracker details"
-      ),
-      dg.span({style:{'margin-left':'50px'}}),
       dg.span({style:{color:'cornflowerblue', 'margin-right':'10px', cursor:'pointer'},
        onclick: function(e) {
          chrome.runtime.sendMessage({msg: "removeLocalItem", list:"logs", item:alog}, function(response) {
@@ -233,7 +227,7 @@ const history = {
            }
          })
       }},
-      "Remove history item")
+      "Remove from history logs ")
     ))
 
     return detailsdiv

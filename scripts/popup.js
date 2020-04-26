@@ -19,7 +19,7 @@ var tabinfo
 chrome.tabs.query({active:true,currentWindow:true},function(tabArray){
   var purl;
   if (tabArray && tabArray.length>0 && tabArray[0].url){
-    console.log(tabArray[0])
+    //onsole.log(tabArray[0])
     purl = corePath(tabArray[0].url);
     tabinfo = {
       url: tabArray[0].url,
@@ -37,7 +37,7 @@ chrome.tabs.query({active:true,currentWindow:true},function(tabArray){
   } else {
     setTimeout(function(){
       chrome.runtime.sendMessage({msg: "getPageData", purl:purl, tabinfo:tabinfo}, function(response) {
-        console.log('getPageData',response)
+        //onsole.log('getPageData',response)
         if (response && response.success) {
           current_log = response.details.current_log;
           marks.current = response.details.current_mark;
@@ -79,7 +79,7 @@ chrome.tabs.query({active:true,currentWindow:true},function(tabArray){
                 } else {
                   marks.current = returndata[0];
                   showCurrentUserMark();
-                  chrome.runtime.sendMessage({msg: "onlineMark", purl:purl, marks:returndata}, function(response) {
+                  chrome.runtime.sendMessage({msg: "newOnlineMarks", marks:returndata}, function(response) {
                     //onsole.log('updated online mark ',response)
                   })
                 }
@@ -119,7 +119,7 @@ var opentab = function(tabName, options={}) {
     if (options && options.source=='clicktab' && (!current_log || tab_open_time-current_log.vulog_timestamp<2000) ) {
       dg.el("tracker_main",{clear:true}).appendChild(dg.div({style:{'margin-left':'250px','margin-top':'100px'}},dg.img({src:"../freezrPublic/static/ajaxloaderBig.gif"})))
       setTimeout(function(){
-        chrome.runtime.sendMessage({msg: "getPageData", purl:current_log.purl}, function(response) {
+        chrome.runtime.sendMessage({msg: "getPageData", purl:tabinfo.purl, tabinfo:tabinfo}, function(response) {
           if (response && response.success) {
             current_log = response.details.current_log;
             dg.el("tracker_main",{clear:true,top:true}).appendChild(showTrackers(current_log, true))
@@ -162,6 +162,9 @@ var opentab = function(tabName, options={}) {
                 break;
             case 'removeLocalData':
                 removeLocalData();
+                break;
+            case 'removeHistoryOnly':
+                removeHistoryOnly();
                 break;
             case 'trySyncing':
                 trySyncing();
@@ -238,8 +241,8 @@ freezr.app.loginCallback = function(jsonResp){
           showWarning("Successful login")
           dg.hideEl('notloggedinmsg')
           freezr.ceps.getquery({'collection':'marks'}, function (returndata) {
-            chrome.runtime.sendMessage({msg: "onlineMark", marks:returndata}, function(response) {
-              console.log('todo - need to show marks on marks page... updated online marks ',response)
+            chrome.runtime.sendMessage({msg: "newOnlineMarks", marks:returndata}, function(response) {
+              marks.doSearch(true)
             })
           })
         } else {
@@ -283,7 +286,19 @@ var pause_vulog = function(doPause) {
 var removeLocalData = function() {
 	chrome.runtime.sendMessage({msg: "removeLocalData", tabinfo:tabinfo}, function(response) {
 		if (response.success) {
+      history.doSearch(true)
+      marks.doSearch(true)
       showWarning("Local data removed.");
+		} else {
+			showWarning("Error trying to remove local data.");
+		}
+  });
+}
+var removeHistoryOnly = function() {
+	chrome.runtime.sendMessage({msg: "removeHistoryOnly", tabinfo:tabinfo}, function(response) {
+		if (response.success) {
+      history.doSearch(true)
+      showWarning("History removed.");
 		} else {
 			showWarning("Error trying to remove local data.");
 		}
@@ -450,3 +465,31 @@ var addToListAsUnique = function(aList,anItem) {
 }
 
 freezr.utils.addFreezerDialogueElements();
+
+
+document.getElementById("inputFileToLoad").onchange=function(){
+    // utility used to encode images fir background url. (from stackoverflow)
+
+    var filesSelected = document.getElementById("inputFileToLoad").files;
+    if (filesSelected.length > 0) {
+      var fileToLoad = filesSelected[0];
+
+      var fileReader = new FileReader();
+
+      fileReader.onload = function(fileLoadedEvent) {
+        var srcData = fileLoadedEvent.target.result; // <--- data: base64
+
+        var newImage = document.createElement('img');
+        newImage.src = srcData;
+
+        document.getElementById("imgTest").innerHTML = newImage.outerHTML;
+        alert("Converted Base64 version is " + document.getElementById("imgTest").innerHTML);
+        console.log("Converted Base64 version is " + document.getElementById("imgTest").innerHTML);
+      }
+      fileReader.readAsDataURL(fileToLoad);
+    }
+}
+
+function encodeImageFileAsURL() {
+
+}
