@@ -11,7 +11,7 @@ if (vulog_redirect.query) {
   //onsole.log({vulog_redirect, queries})
   if (queries.vulogredirect) {
     if (!queries.vulogid) {
-      //  HOST + /ppage/ USER /info.freezr.vulog.marks/ ID
+      //  HOST + /ppage/ USER /com.salmanff.vulog.marks/ ID
       let parts = window.location.pathname.split('/')
       parts = parts.slice(2)
       queries.vulogid = parts.join('/')

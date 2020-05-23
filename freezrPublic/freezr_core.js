@@ -1,4 +1,4 @@
-/* Core freezr API - v0.0.122 - 2018-08
+/* Core freezr API - v0.0.122 - 2020-03
 
 The following variables need to have been declared in index.html
     freezr_app_name, freezr_app_token (previously 2019 freezr_app_code), freezr_user_id, freezr_user_is_admin
@@ -156,7 +156,7 @@ freezr.feps.postquery = function(...optionsAndCallback) {
 freezr.ceps.update = function(data={}, ...optionsAndCallback) {
   // simple record update, assuming data has a ._id object
   // options:
-    // app_table or collection (in which case the app is assumed to be freezr_app_nameapp_table )
+    // app_table or collection (in which case the app is assumed to be freezr_app_name.app_table )
   const [options, callback] = freezr.utils.getOpCbFrom(optionsAndCallback)
   if (!data._id) {
     callback({"error":"No _id to update."});
@@ -219,9 +219,8 @@ freezr.perms.getAllAppPermissions = function(callback) {
 }
 freezr.perms.isGranted = function(permission_name, callback) {
   // see if a permission has been granted by the user - callback(isGranted)
-  var url = '/v1/permissions/getall/'+freezr_app_name+'/'+freezr_app_code;
+  var url = '/v1/permissions/getall/'+freezr_app_name;
   freezer_restricted.connect.read(url, null, function(ret){
-    ret = freezr.utils.parse(ret);
     let isGranted = false;
     ret.forEach((aPerm) => {
       if (aPerm.permission_name == permission_name && aPerm.granted == true) isGranted=true;
@@ -265,8 +264,7 @@ Object.keys(freezr.promise).forEach(typeO => {
       var args = Array.prototype.slice.call(arguments);
       return new Promise(function (resolve, reject) {
         args.push(function(resp) {
-          resp=freezr.utils.parse(resp);
-          if (!resp || resp.error) {reject(resp);} else { resolve(resp)}
+          if (resp===undefined || resp===null || resp.error) {reject(resp);} else { resolve(resp)}
         })
         freezr[typeO][freezrfunc](...args)
       });
@@ -306,7 +304,7 @@ freezr.utils.getHtml = function(part_path, app_name, callback) {
     callback("error - can only get html files")
   } else {
     var html_url = '/app_files/'+app_name+"/"+part_path;
-    freezer_restricted.connect.read(html_url, null, callback);
+    freezer_restricted.connect.read(html_url, null, callback,{textResponse:true});
   }
 }
 freezr.utils.getAllAppList = function(callback) {
@@ -418,6 +416,7 @@ freezr.utils.longDateFormat = function(aDateNum) {
 }
 freezr.utils.testCallBack = function(returnJson) {
   returnJson = freezer_restricted.utils.parse(returnJson);
+  //onsole.log("testCallBack - return json is ",returnJson);
 }
 
 /*  ==================================================================
@@ -457,7 +456,8 @@ freezer_restricted.permissions= {};
       }
   	freezer_restricted.connect.send(url, postData, callback, "PUT", contentType);
   };
-  freezer_restricted.connect.read = function(url, data, callback) {
+  freezer_restricted.connect.read = function(url, data, callback, options) {
+    // options - textResponse (response is text)
   	if (data) {
   	    var query = [];
   	    for (var key in data) {
@@ -465,10 +465,10 @@ freezer_restricted.permissions= {};
   	    }
   	    url = url  + '?' + query.join('&');
       }
-      freezer_restricted.connect.send(url, null, callback, 'GET', null)
+      freezer_restricted.connect.send(url, null, callback, 'GET', null, options)
   };
-  freezer_restricted.connect.send = function (url, postData, callback, method, contentType) {
-    //onsole.log("getting send req for url "+url)
+  freezer_restricted.connect.send = function (url, postData, callback, method, contentType, options) {
+    //onsole.log("getting send req for url "+url+" options",options)
   	let req = null, badBrowser = false;
     if (!callback) callback= freezr.utils.testCallBack;
   	try {
@@ -494,8 +494,9 @@ freezer_restricted.permissions= {};
         req.onreadystatechange = function() {
           if (req && req.readyState == 4) {
               var jsonResponse = req.responseText;
-              //onsole.log("AT freezr - status "+this.status,jsonResponse)
-              jsonResponse = jsonResponse? (freezr.utils.parse(jsonResponse)) : {"error":"No Data sent from servers", "errorCode":"noServer"};
+              //onsole.log("AT freezr - status "+this.status+" "+url+" "+jsonResponse)
+              if (!jsonResponse) jsonResponse = '{"error":"No Data sent from servers", "errorCode":"noServer"}';
+              if (!options || !options.textResponse) jsonResponse = freezr.utils.parse(jsonResponse)
               if (this.status == 200 || this.status == 0) {
     				    callback(jsonResponse);
         			} else if (this.status == 400) {
@@ -618,7 +619,7 @@ freezer_restricted.permissions= {};
       permHtml = permHtml.all_perms_in_html
       document.getElementById('freezer_dialogueInnerText').innerHTML+=permHtml;
       freezer_restricted.menu.replace_missing_logos();
-    });
+    },{textResponse:true});
   }
   freezer_restricted.menu.replace_missing_logos = function() {
     //let imglist = document.getElementsByClassName("logo_img");

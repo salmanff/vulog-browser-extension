@@ -1,4 +1,4 @@
-/* v2019-12 update
+/* v2020-05 update
 jlos - Json Local Storage
 jlos is a simple object for storing data in local storage, without using the filesystem for archiving data.
 jlos-frozen has additional syncing functionality for freezr
@@ -11,9 +11,9 @@ Dependency: freezr_core.js
 	saver:
 		nosave, dosave, auto (default)
 	 	set to dosave if working on development - other wise, it is unsafe to do so outside of an non-web-based app
-	dealWithConflicts:
+	handleConflictedItem:
 		function that allows you to transform the copy of the item and send it back for jlos to store it
-		if return null, the conflicted copy is not kept
+		if return null, the returned coitempy is not kept (ie the local copy prevails)
 		easiest function would be function(copyOfItem) {return copyOfItem}
 */
 
@@ -24,7 +24,6 @@ function jlos(name, options) {
 
 jlos.prototype.initialize = function (options) {
  this.options = options? options : {};
- this.options.dealWithConflicts = options.addConflistAsNew;
  this.writeError = false;
  this.syncWarnings = {'uploadWarnings':[],'uploadErrors':[]}
  this.options.saver = options.saver? options.saver: "auto";
@@ -89,7 +88,7 @@ jlos.prototype.getSpaceUsed = function() {
 	if (this.saveLS()) {
 		var x, self, total=0;
 		for (x in localStorage){
-			total+=localStorage[x].length * 2
+			if (localStorage.hasOwnProperty(x)) total+=localStorage[x].length * 2
 		};
 		//log.push("Total = " + (total/1024/1024).toFixed(2)+ " MB");
 		return {'total':(total/1024), 'this':(localStorage["jlos-data-"+this.name].length*2/1024)} ;
@@ -105,7 +104,6 @@ jlos.prototype.removeFreezrInfo = function(theList) {
                 delete anItem._id;
                 delete anItem._date_modified;
                 delete anItem._date_created;
-                delete anItem._owner;
             });
     }
     self.save();
@@ -139,7 +137,6 @@ jlos.prototype.sync = function(theList, options) {
 	var self = this;
 	var changedItems = [];
 	var newItems = [];
-	var oldCopiesOfChangedItems = [];
 	if (!options) options = {};
 	if (!options.warningCallBack) options.warningCallBack = function(msgJson) {console.log("WARNING: "+msgJson);}
 
@@ -152,18 +149,15 @@ jlos.prototype.sync = function(theList, options) {
 		var queryOptions = {'collection':theList,'q':{}};
 		//if (options.permissionName) queryOptions.permission_name = options.permissionName
 		if (this.data.last_server_sync_time && this.data.last_server_sync_time[theList]) {
-			queryOptions.q = {'_date_modified':{'$gt':this.data.last_server_sync_time[theList]}};
-		} else {
-			//queryOptions.q = {'$or': [{'fj_deleted':{$exists:false}},{'fj_deleted':false}]};
-			//queryOptions.count = (isNaN(options.numItemsToFetchOnStart) || !options.numItemsToFetchOnStart)? 20:options.numItemsToFetchOnStart;
-			//queryOptions.sort = {'_date_modified': -1};
+			queryOptions.q = {'_date_modified':{$gt:this.data.last_server_sync_time[theList]}};
 		}
 		var self = this;
 		//onsole.log("syncing "+theList,queryOptions)
 		freezr.ceps.getquery(queryOptions, function(returnJson) {
+      //onsole.log("getting all items after "+new Date(self.data.last_server_sync_time[theList]).toLocaleDateString()+new Date(self.data.last_server_sync_time[theList]).toLocaleTimeString() , returnJson)
 			let message = null
 		  if (returnJson.error) {
-				console.warn("error syncing "+returnJson)
+				if (!returnJson.errorCode || returnJson.errorCode!="noServer") console.warn("error syncing ",returnJson)
 				self.syncing = false;
         let message = (returnJson.errorCode && returnJson.errorCode == "noServer")? {error:"no connection", msg:"Could not connect to server"}:{error:"server Error", msg:(returnJson.msg || returnJson.message ||"Error syncing."), code:returnJson.code};
 				if (options.endCallBack)
@@ -180,54 +174,42 @@ jlos.prototype.sync = function(theList, options) {
 					}
 					returnJson.sort(fjReverseSort)
 
-
-
 					for (var i=0; i<returnJson.length; i++){
 						returnItem = options.downloadedItemTransform? options.downloadedItemTransform(returnJson[i]): JSON.parse(JSON.stringify(returnJson[i]));
 						resultIndex = self.idIndex(theList, returnItem, false);
 						if (resultIndex >-1) {
 							var existingItem = self.data[theList][resultIndex];
-							if (existingItem._date_modified >= returnItem._date_modified) { // NO Conflicts - no need to change
-								//onsole.log("NO NEED TO CHANGE "+returnItem._id);
-							} else if (!existingItem.fj_modified_locally) { // NO Conflicts	- do replace
+							if (existingItem._date_modified >= returnItem._date_modified) {
+								if (existingItem._date_modified > returnItem._date_modified) console.warn("SNBH - modified date greater on server?? "+returnItem._id);
+							} else if (!existingItem.fj_modified_locally) { // NO Conflicts	- changed on another instance of the app
 								//onsole.log("NO conflicts - update"+returnItem._id);
-								//OLD - why had this? oldCopiesOfChangedItems.push(JSON.parse(JSON.stringify(existingItem) ) )
 								self.data[theList][resultIndex] = returnItem;
 								self.data[theList][resultIndex].fj_modified_locally=null;
 								changedItems.push(returnItem);
-							} else { // conflict exists
+							} else { // conflict exi sts
 								console.warn("CONFLICT dates - existing is ",existingItem,returnItem , new Date(existingItem._date_modified).toLocaleTimeString()+ "returned is"+new Date(returnItem._date_modified).toLocaleTimeString());
-								oldCopiesOfChangedItems.push(JSON.parse(JSON.stringify(existingItem) ) )
 
-								changedItems.push(returnItem);
+                self.data[theList][resultIndex]._date_modified = returnItem._date_modified;
 
+                if (!returnItem.fj_conflictedIds) returnItem.fj_conflictedIds=[]
+                returnItem.fj_conflictedIds.push(returnItem._id)
+                delete returnItem._id;
+                delete returnItem.fj_local_temp_unique_id;
+                delete returnItem._date_created;
+                delete returnItem._date_modified;
 								returnItem.fj_modified_locally = null;
-								self.data[theList][resultIndex] = JSON.parse(JSON.stringify(returnItem));
+                returnItem.fj_local_temp_unique_id = self.data.fj_local_id_counter++;
 
-								var copyOfExistingItem = (!existingItem.fj_deleted && self.options.addConflistAsNew)? self.options.addConflistAsNew(existingItem) : null;
-
-								if (copyOfExistingItem) {
-									copyOfExistingItem = JSON.parse(JSON.stringify(copyOfExistingItem))
-									delete copyOfExistingItem._id;
-									delete copyOfExistingItem.fj_local_temp_unique_id;
-									delete copyOfExistingItem._date_created;
-									delete copyOfExistingItem._date_modified;
-									copyOfExistingItem.fj_local_temp_unique_id = self.data.fj_local_id_counter++;
-									copyOfExistingItem = JSON.parse(JSON.stringify(copyOfExistingItem));
-									self.data[theList].push(copyOfExistingItem);
-									newItems.push(copyOfExistingItem);
-								}
-								if (self.options.handleConflictedItem) self.options.handleConflictedItem(returnItem, resultIndex);
+								if (options.handleConflictedItem)
+                  options.handleConflictedItem(returnItem, self.data[theList][resultIndex]);
+                else
+                  console.warn('conflicted entries - got from server item:',returnItem, 'kept local item:',self.data[theList][resultIndex])
 							}
-						} else if (!returnItem.fj_deleted) {
-              returnItem = JSON.parse(JSON.stringify(returnItem));
+						} else if (returnItem && !returnItem.fj_deleted) {
 							returnItem.fj_modified_locally = null;
-							if (self.data[theList] && self.data[theList].length>0){
-								self.data[theList].push(returnItem);
-							} else {
-								self.data[theList]= [returnItem];
-							}
-							newItems.push(returnItem);
+              if (!self.data[theList]) self.data[theList]=[]
+							self.data[theList].push(returnItem);
+              newItems.push(returnItem)
 						} else {
 							//onsole.log("NOT ADDDING DELETED NEW ITEM  ");
 						}
@@ -239,7 +221,7 @@ jlos.prototype.sync = function(theList, options) {
 					};
 				}
 
-				if (options.gotNewItemsCallBack) options.gotNewItemsCallBack(newItems,changedItems, oldCopiesOfChangedItems);
+				if (options.gotNewItemsCallBack) options.gotNewItemsCallBack(newItems,changedItems);
 
 				if (!options.doNotCallUploadItems) {
 					self.uploadNewItems(theList, options);
@@ -262,7 +244,7 @@ jlos.prototype.uploadNewItems = function (theList, options) {
 	var listItemNumber = -1, anItem=null, transformedItem=null;
 	if (this.data[theList] && this.data[theList].length>0){
 		for (let i = 0; i<this.data[theList].length; i++) {
-			if (this.data[theList][i].fj_modified_locally && !this.data[theList][i].fj_upload_error) {
+			if (this.data[theList][i] && this.data[theList][i].fj_modified_locally && !this.data[theList][i].fj_upload_error) {
         anItem = this.data[theList][i];
   			transformedItem = JSON.parse(JSON.stringify(anItem));
 				try {
@@ -272,6 +254,7 @@ jlos.prototype.uploadNewItems = function (theList, options) {
           break;
 				} catch(e) {
 					this.syncWarnings.uploadErrors.push({list:theList, item:anItem});
+          this.data[theList][i].fj_upload_error=true;
 					anItem = null;
 				}
 			}
@@ -282,7 +265,7 @@ jlos.prototype.uploadNewItems = function (theList, options) {
 			anItem.fj_local_temp_unique_id = this.data.fj_local_id_counter++;
 			transformedItem.fj_local_temp_unique_id = anItem.fj_local_temp_unique_id;
 		}
-    if (!anItem.fj_deleted) anItem.fj_deleted=false;		// to add device
+		if (!anItem.fj_deleted) anItem.fj_deleted=false;		// to add device
 		//this.data[theList][listItemNumber].fj_device_modified_on =
 		this.save();
 		var uploadOptions = {'collection':theList};
@@ -297,15 +280,14 @@ jlos.prototype.uploadNewItems = function (theList, options) {
 
 		freezr.ceps.create (transformedItem, uploadOptions, function (returnData) {
 			// check that the item id is correct - update the item and set modified to null;
-      returnData = freezr.utils.parse(returnData);
 			if (returnData.error) {
 				options.warningCallBack({'error':returnData.error, code:returnData.code, msg:"error uploading note to database "+(returnData.message? returnData.message:""), "item":anItem, "status":returnData.status});
 				anItem.fj_upload_error=true;
         if (!this.syncWarnings) this.syncWarnings = {'uploadWarnings':[],'uploadErrors':[]}
         this.syncWarnings.uploadWarnings.push({list:theList, item:anItem})
-        // if decide to delete...
-        let idx = self.idIndex(theList,anItem)
-        self.data[theList].splice(idx,1)
+        // if decide to delete... re-removed 2020
+        // let idx = self.idIndex(theList,anItem)
+        // self.data[theList].splice(idx,1)
         self.uploadNewItems (theList, options);
 			} else if ( !transformedItem._id ) { // new item
         if (anItem.fj_local_temp_unique_id != self.data[theList][listItemNumber].fj_local_temp_unique_id) {
@@ -316,6 +298,7 @@ jlos.prototype.uploadNewItems = function (theList, options) {
 				anItem.fj_modified_locally = null;
 				anItem._date_modified = returnData._date_modified;
 				anItem._date_created = anItem._date_created || returnData._date_created;
+        if (options.uploadedItemCallback) options.uploadedItemCallback(listItemNumber, self.data[theList][listItemNumber]);
 				self.save();
         self.uploadNewItems (theList, options);
 			} else if (anItem._id == returnData._id) {
@@ -335,116 +318,15 @@ jlos.prototype.uploadNewItems = function (theList, options) {
 				self.syncing=false;
 				if (options.endCallBack) options.endCallBack();
 			}
-
 		} );
 
 	} else { // no new items
 		this.syncing = false;
-    if (this.data[theList] && this.data[theList].length>0) this.data[theList].map(function(anitem) {delete anitem.fj_upload_error})
+    if (this.data[theList] && this.data[theList].length>0) this.data[theList].map(function(anitem) {if (anitem) delete anitem.fj_upload_error})
 		if (options.endCallBack) options.endCallBack();
 	}
 }
-// Syncing
-jlos.prototype.getOlderItems = function(theList, options) {
-	/*
-	theList is any list which is in the JLos data object - it corresponds to the collection name in freezr
-	options are:
-		warningCallBack: function sending warning messages in case of errors - warnings are objects with an "error" describing error and a "msg", plus "item" if relevant showing item that had error
-		downloadedItemTransform: function that transforms the data in the list when it is downloaded from the server (typically used for encryption)
-		endCallBack: function called when the process is finished.
-		numItemsToFetchOnStart: Number of items to fetch when jlos is started
 
-		lastOldest: searches for items older than this datenum
-		'addToJlos': adds it to the current jlos - if false, can add manually later or selectively
-		'queryParams': additional query parameters
-		permissionName is permission used for access
-
-	*/
-
-	var self = this;
-	var changedItems = [];
-	var newItems = [];
-	if (!options) options = {};
-	let state = {lastOldest:new Date().getTime()};
-	if (!options.warningCallBack) options.warningCallBack = function(msgJson) {console.log("WARNING: "+JSON.stringify(msgJson));}
-
-	//onsole.log("startSyncItems - this.data.last_server_sync_time "+freezr.utils.longDateFormat( this.data.last_server_sync_time) );
-	if (this.syncing) {
-		options.warningCallBack({error:"already syncing", msg:"Snycing already in progress"});
-	} else {
-		this.syncing=true;
-		var queryOptions = {'collection':theList,'q':options.queryParams};
-		//onsole.log("fjlos syncing "+theList)
-
-		if (options.lastOldest) state.lastOldest = options.lastOldest;
-		queryOptions.q = options.q || {};
-		queryOptions.q['_date_modified']={'$lt':state.lastOldest}
-		queryOptions.q['$or']= [{'fj_deleted':{$exists:false}},{'fj_deleted':false}];
-		//onsole.log("q (query params)",queryOptions.q)
-		queryOptions.count = (isNaN(options.numItemsToFetchOnStart) || !options.numItemsToFetchOnStart)? 20:options.numItemsToFetchOnStart;
-		queryOptions.sort = {'_date_modified': -1};
-		if (options.permissionName) queryOptions.permission_name = options.permissionName
-
-		freezr.ceps.getquery(queryOptions, function(returnJson) {
-			//onsole.log(" getolderitems "+theList+" returnJson",returnJson)
-
-			if (returnJson.error) {
-				console.warn("error syncing", returnJson)
-				self.syncing = false;
-				if (returnJson.errorCode && returnJson.errorCode == "noServer") {
-					options.warningCallBack({error:"no connection", msg:"Could not connect to server"});
-				} else {
-					options.warningCallBack({error:"server Error", msg:"Error syncing."});
-				}
-				if (options.endCallBack) options.endCallBack(returnJson);
-			} else {
-				if (returnJson && returnJson.length>0) {
-					function fjReverseSort(obj1,obj2) {
-						return obj1._date_modified - obj2._date_modified
-					}
-					returnJson.results.sort(fjReverseSort)
-
-					if (returnJson.length<queryOptions.count)state.noMoreItems = true
-
-					for (var i=0; i<returnJson.length; i++){
-						returnItem = options.downloadedItemTransform? options.downloadedItemTransform(returnJson[i]): JSON.parse(JSON.stringify(returnJson[i]));
-
-						let resultIndex = self.idIndex(theList, returnItem, false);
-
-						if (resultIndex <0) {
-							returnItem = JSON.parse(JSON.stringify(returnItem));
-							returnItem.fj_modified_locally = null;
-							if (options.addToJlos) {
-								if (self.data[theList] && self.data[theList].length>0){
-									self.data[theList].push(returnItem);
-								} else {
-									self.data[theList]= [returnItem];
-								}
-							}
-							newItems.push(returnItem);
-						} else if (returnItem._date_modified > self.data[theList][resultIndex]._date_modified){
-							//onsole.log("Adding return item as date modified later",returnItem);
-							returnItem=JSON.parse(JSON.stringify(returnItem));
-							self.data[theList][resultIndex]=returnItem;
-							newItems.push(returnItem);
-						}
-
-						if (returnItem._date_modified < state.lastOldest) {
-							state.lastOldest = returnItem._date_modified;
-						}
-					}
-				} else {
-					state.noMoreItems = true
-				}
-
-				self.syncing = false;
-				self.save();
-				if (options.endCallBack) options.endCallBack(newItems, state);
-			}
-
-		});
-	}
-}
 // accessing changing lists
 jlos.prototype.list = function (theList, options={}) {
 	retList = this.data[theList];
@@ -506,23 +388,6 @@ jlos.prototype.add = function(theList, anItem) {
 		return null;
 	}
 }
-jlos.prototype.updateItemFields = function(theList, recordIdOrTempLocalId, updateFields, overRideOwnership) {
-	// finds the record using criteria, and updated
-	// normally shouldnt update a record which is not created by _owner. overRideOwnership over-rides this
-	let idIndex = this.idIndex(theList, {'_id':recordIdOrTempLocalId,'fj_local_temp_unique_id':recordIdOrTempLocalId}, true)
-	let theItem = idIndex>=0? this.data[theList][idIndex]: null;
-	let isOwner = theItem? (!theItem._owner || theItem._owner==freezr_user_id):false;
-	if ((overRideOwnership || isOwner) && idIndex>=0) {
-		if (updateFields){
-			Object.keys(updateFields).forEach(function(aParam) {theItem[aParam]=updateFields[aParam]})
-		}
-		theItem.fj_modified_locally = new Date().getTime();
-		return theItem;
-	} else if (idIndex<0){
-		console.warn("Could not find item",recordIdOrTempLocalId," in list "+theList)
-		throw Error("could not find item to update")
-	} else {return theItem}
-}
 jlos.prototype.updateFullRecord = function(theList, anItem) {
 	// finds the full item by its id and replaces the full record
 	let idIndex = this.idIndex(theList, anItem, true)
@@ -545,12 +410,12 @@ jlos.prototype.markDeleted = function(theList, anItem, options={}) {
       this.data[theList].splice(idIndex,1)
     } else {
       let item = this.data[theList][idIndex]
-			const KEYSTOSTAY = ['_date_modified','_date_created','_owner','_id','_accessible_By','fj_modified_locally','fj_local_temp_unique_id']
+			const KEYSTOSTAY = ['_date_modified','_date_created','_id','_owner','_accessible_By','fj_modified_locally','fj_local_temp_unique_id']
       Object.keys(item).forEach(function(aParam) {
         if (!KEYSTOSTAY.includes(aParam)) {delete item[aParam]}
       })
-      this.data[theList][idIndex].fj_deleted = true;
-  		this.data[theList][idIndex].fj_modified_locally = new Date().getTime();
+		this.data[theList][idIndex].fj_deleted = true;
+		this.data[theList][idIndex].fj_modified_locally = new Date().getTime();
 		}
 		this.save();
 		return this.data[theList][idIndex];
@@ -560,7 +425,6 @@ jlos.prototype.markDeleted = function(theList, anItem, options={}) {
 		return null
 	}
 }
-
 
 jlos.prototype.idIndex = function(theList, anItem, searchLocalTempIds) {
 	var refList = this.data[theList];
@@ -575,7 +439,7 @@ jlos.prototype.idIndex = function(theList, anItem, searchLocalTempIds) {
 	}
 	if (searchLocalTempIds && theIndex == -1) { // generally a locally created conflicted copy that has no id but has a temporary local id
 		for (var i=0; i<refList.length; i++) {
-			if (!refList[i]._id && refList[i].fj_local_temp_unique_id && refList[i].fj_local_temp_unique_id == anItem.fj_local_temp_unique_id) {
+			if (refList[i] && !refList[i]._id && refList[i].fj_local_temp_unique_id && refList[i].fj_local_temp_unique_id == anItem.fj_local_temp_unique_id) {
 				theIndex = i;
 				break;
 			}
@@ -650,7 +514,7 @@ jlos.prototype.queryObjs = function (theList, params, options={}) {
 		for (i=refList.length-1; i>-1; i--) {
 			isCandidate = true;
 			Object.keys(params).forEach(function(aParam) {
-				if (isCandidate && (refList[i][aParam] == params[aParam] || (!refList[i][aParam] && !params[aParam]))) {
+				if (isCandidate && refList[i] && (refList[i][aParam] == params[aParam] || (!refList[i][aParam] && !params[aParam]))) {
 					isCandidate = true;
 				} else {
 					isCandidate = false;
@@ -659,7 +523,7 @@ jlos.prototype.queryObjs = function (theList, params, options={}) {
 			if (isCandidate) objectList.push((options && options.makeCopy)? JSON.parse(JSON.stringify(refList[i])) : refList[i])
       if (isCandidate && !options.includeDeleted && refList[i].fj_deleted) isCandidate=false
       if (isCandidate && options.getOne) {break;}
-		}
+    }
 	}
   if (options && options.getOne && options.getIndex) return [ objectList[0], (isCandidate? i:-1) ]
 	else return objectList;

@@ -20,7 +20,16 @@ dg.addAttributeException('db_id')
 dg.addAttributeException('fj_id')
 dg.addAttributeException('purl')
 
+
+
+var endsWith = function (longertext, checktext) {
+  if (!longertext || !checktext || !(typeof longertext === 'string')|| !(typeof checktext === 'string')) {return false} else
+  if (checktext.length > longertext.length) {return false} else {
+  return (checktext == longertext.slice(longertext.length-checktext.length));}
+}
+
 var marks = {
+  viewMode:(endsWith(window.location.pathname,'markInTab.html')? 'markInTab':'popup'),
   current:{},
   init_state: function(){
     //onsole.log("INIT STATE")
@@ -35,7 +44,7 @@ var marks = {
     this.doSearch();
   },
   doSearch: function (reinit) {
-    let searchTerms = this.removeSpaces(dg.el('idSearchMarksBox').textContent).toLowerCase()
+    let searchTerms = this.removeSpacesEtc(dg.el('idSearchMarksBox').textContent).toLowerCase()
     if (mark_search.last_words_searched!=searchTerms || reinit) this.init_state();
     mark_search.last_words_searched=searchTerms;
     mark_search.star_filters = []
@@ -48,11 +57,12 @@ var marks = {
         count   : mark_search.more_items,
 
     }
+    console.log(query_params)
     chrome.runtime.sendMessage({msg: "searchLocally", list:"marks", query_params:query_params}, function(response) {
         //onsole.log('search repsonse ',response)
         if (!response || !response.success) {
             showWarning("Error trying to do backgroundLocalSearch");
-        } else {
+        } else if (response.results.length>0 || mark_search.allresults.length ==0) {
           // {success:true, results:results, nomore: current_item==0}
           mark_search.allresults.push( response.results)
           mark_search.nomore = response.nomore
@@ -106,6 +116,7 @@ var marks = {
 
   },
   drawItem : function (alog) {
+    let that=this;
     itemdiv=dg.div({style:{'margin-top':'10px'}})
     //onsole.log(alog)
 
@@ -127,7 +138,7 @@ var marks = {
           }
         })
       ),
-      dg.a({
+      dg.span({
           style:{
             overflow: "hidden",
             "text-overflow": "ellipsis",
@@ -138,9 +149,24 @@ var marks = {
             height: '18px',
             display: 'inline-block',
             'vertical-align': 'top',
+          color:'darkgrey',
           },
-          href:alog.url,
-          target:'_blank'
+          onclick: function(){
+            chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+              //onsole.log("tabs[0].url",tabs[0].url)
+              if (that.viewMode=='markInTab' || tabs[0].url.indexOf('chrome-extension')==0){
+                let left = window.screenLeft != undefined ? window.screenLeft : window.screenX;
+                let top = window.screenTop != undefined ? window.screenTop : window.screenY;
+                let height = window.innerHeight ? window.innerHeight : document.documentElement.clientHeight ? document.documentElement.clientHeight : screen.height;
+                that.urlwin = window.open(alog.url,"window","width=800, height="+height+",  left ="+(left+500)+", top="+top+"")//toolbar=0, menubar=0,
+              }else{
+                chrome.tabs.sendMessage(tabs[0].id, {action: 'loadurl',url:alog.url}, function(response) {
+                  console.log("GOT ERROR ON RETIURN")
+                  window.open(alog.purl,'_blank')
+                });
+              }
+            });
+          }
         },
         (alog.title? (alog.domain_app+" - "+alog.title): alog.url)
       )
@@ -175,7 +201,7 @@ var marks = {
         db_id:((changable && alog.id)?alog.id:null),
         fj_id:((changable && alog.fj_local_temp_unique_id)?alog.fj_local_temp_unique_id:null),
         onclick:function(e){
-          if (aStar=='bullhorn'){
+          if (aStar=='bullhorn' && (chosen=="unchosen")){
             showWarning("You can only publish an item from the 'Current' page."+(aStar._id?"":".. and you have to be logged into your Personal Data Store."))
           } else if (changable) {
             chrome.runtime.sendMessage({
@@ -206,8 +232,14 @@ var marks = {
         overflow:'hidden',
         transition:'height 0.3s ease-out',
         width: '500px'
-      }},dg.div({style:{'margin-top':'3px', color:'darkgray','overflow':'hidden','text-overflow':'ellipsis','height':'16px'}},
-        dg.a({href:alog.purl,target:'_blank'},alog.purl)))
+      }},
+      dg.div({style:{'margin-top':'3px', color:'darkgray'}},
+      dg.div({style:{'height':'16px','overflow':'hidden','text-overflow':'ellipsis'}},"url: ",dg.a({href:alog.purl,target:'_blank'},alog.purl)),
+      dg.div("Created: "+ (new Date (alog.vulog_timestamp).toLocaleDateString() + " "+new Date (alog.vulog_timestamp).toLocaleTimeString() +" (Modified: "+(new Date (alog._date_modified || alog.fj_modified_locally).toLocaleDateString())+")" )),
+      dg.div({style:{'height':'16px','overflow':'hidden','text-overflow':'ellipsis',display:(alog.referrer?'block':'none')}},
+        "referrer: ",dg.a({href:alog.referrer,target:'_blank'},alog.referrer))
+      )
+    )
 
     if (alog.description) {
       detailsdiv.appendChild(dg.div(
@@ -302,12 +334,17 @@ var marks = {
   },
 
   // utilities
-  removeSpaces : function(aText) {
+  removeSpacesEtc : function(aText) {
       aText = aText.replace(/&nbsp;/g," ").trim();
+      aText = aText.replace(/\//g," ").trim();
+      aText = aText.replace(/,/g," ").trim();
+      aText = aText.replace(/\:/g," ").trim();
+      aText = aText.replace(/\-/g," ").trim();
+      aText = aText.replace(/\./g," ").trim();
       while (aText.indexOf("  ")>-1) {
           aText = aText.replace(/  /," ");
       }
-      return aText;
+      return aText.toLowerCase();
   },
   timeSpentify: function (aTime) {
       //
@@ -319,5 +356,4 @@ var marks = {
       var stop = aUrl.slice(start).indexOf("/");
       return aUrl.slice(0,stop+start);
   }
-
 }

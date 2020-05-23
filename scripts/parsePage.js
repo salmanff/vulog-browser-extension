@@ -177,3 +177,30 @@ Object.defineProperty(HTMLMediaElement.prototype, 'playing', {
 
 // Get Started
 startParse()
+
+
+// additional message receipts from popup
+
+// refresh page...
+chrome.runtime.onMessage.addListener( function(request, sender, sendResponse) {
+	let nums
+  if (request.action=='refresh') // done after highlight has been removed
+    setTimeout(function(){window.location.reload(false)},50)
+	else if (request.action=='loadurl') // done when pressing a mark on popup
+		setTimeout(function(){window.open (request.url,'_self')},50)
+	else if (request.action=='removeLocalStorage') // done when pressing a mark on popup
+		nums=removeLocalStorage()
+  sendResponse({success: true, nums:nums});
+});
+const removeLocalStorage = function(){
+	let nums=0
+	for (var x in localStorage){
+		if (localStorage.hasOwnProperty(x)) {localStorage.removeItem(x); nums++;}
+	};
+	return nums
+}
+const logLocalStorage = function(){
+	for (var x in localStorage){
+		if (localStorage.hasOwnProperty(x)) console.log(x, localStorage[x])
+	};
+}

@@ -257,7 +257,7 @@ function showTrackers(the_log, is_current) {
       the_log.vulog_sub_pages.forEach (subpage => {
         if (subpage.vulog_cookies && subpage.vulog_cookies.length>0) all_sites = [...all_sites, ...subpage.vulog_cookies]})
 
-      let err_count=0, num_removed=0;
+      let err_count=0, num_removed=0, ls_removed=0;
       all_sites.forEach(site => {
         if (typeof site == "string"){
           chrome.cookies.getAll({url:site}, function (resp){
@@ -281,11 +281,25 @@ function showTrackers(the_log, is_current) {
           err_count++
         }
       });
-      setTimeout(function() {remove_div.appendChild(dg.div('Removed '+num_removed+' cookies. Operations completed with '+err_count+' errors'))},2000)
+      chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+        //onsole.log("tabs[0].url",tabs[0].url)
+        chrome.tabs.sendMessage(tabs[0].id, {action: 'removeLocalStorage',url:the_log.url}, function(response) {
+          ls_removed = response.nums
+            console.log("GOT RETIURN from removeLocalStorage ",response);
+          });
+
+      });
+      setTimeout(function() {remove_div.appendChild(
+        dg.div({style:{'margin-top':'5px'}},
+          dg.div((num_removed>0?('Total Cookies Removed :'+num_removed):"")),
+          dg.div((ls_removed?   ("Local Storage Items Erased: "+ls_removed):'' )),
+          dg.div(err_count?('Total Errors Encountered: '+err_count):'' )
+        )
+      )},1000)
 
     }
-  },"Remove Site Cookies*"),
-  dg.div({style:{color:'indianred','text-align':'left','margin-top':'5px'}},"* Clicking 'Remove Site Cookies' will search for cookies related to the page and try to delete them. But sites have various ways of tracking you, so this is no panecea. Also, as all third party cookies will be sought, this may log you out of some services. So please use with caution."))
+  }," Remove Known Trackers * "),
+  dg.div({style:{color:'indianred','text-align':'left','margin':'2px','margin-top':'5px'}},"* Clicking 'Remove Known Trackers' will search for cookies related to the page and try to delete them. But sites have various ways of tracking you, so this is no panecea. Also, as all third party cookies will be sought, this may log you out of some services. So please use with caution."))
 
   main_div.appendChild(remove_cookies_butt)
 

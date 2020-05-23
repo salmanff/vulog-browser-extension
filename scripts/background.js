@@ -1,13 +1,13 @@
 
 /*
     background.js
-    info.freezr.vulog - chrome app for browser view history and book marking
+    com.salmanff.vulog - chrome app for browser view history and book marking
     version 0.0.2 - march 2020
 
 */
 
 freezr_app_version = "0.0.2";
-freezr_app_name="info.freezr.vulog";
+freezr_app_name="com.salmanff.vulog";
 freezr_app_display_name="Vulog";
 
 freezr.app.isWebBased = false;
@@ -168,7 +168,7 @@ chrome.runtime.onMessage.addListener(
 var vulog_temp_device_id;
 var trySyncing = function(callFwd) {
   //onsole.log("try syncing "+new Date())
-  if (!callFwd) callFwd = console.log
+  if (!callFwd) callFwd = function(){} //console.log
 
   vulog.data.syncErr=null;
   if (vulog.data.freezr_server_address && !syncinprogress) {
@@ -216,7 +216,7 @@ var addDeviceId = function(anItem) {
 var checkMarks = function(callFwd) { // checks to make sure there are no conflicts
   let itemtocheck = null, idx=-1;
   vulog.data.marks.forEach((item, i) => {
-    if (!item._id && !item.checked) {itemtocheck=item; idx=i}
+    if (item && !item._id && !item.checked) {itemtocheck=item; idx=i}
   });
   if (!itemtocheck){
 
@@ -226,7 +226,7 @@ var checkMarks = function(callFwd) { // checks to make sure there are no conflic
 
     freezr.ceps.getquery({'collection':'marks', 'q':{'purl':itemtocheck.purl}}, function (returndata) {
       if (returndata.err || returndata.error) {
-        console.warn("Could not connect to server to check marks conflict ",returndata)
+        if (!returndata.errorCode || returndata.errorCode!="noServer")console.warn("Could not connect to server to check marks conflict ",returndata)
         endofSync()
       } else if (!returndata || returndata.length==0){
 
@@ -249,11 +249,16 @@ var checkMarks = function(callFwd) { // checks to make sure there are no conflic
   }
 }
 var syncMarks = function(callFwd){
-    vulog.sync("marks", {'endCallBack':function() {managePublishChange(callFwd)}});
+  //onsole.log('syncing marks')
+  vulog.sync("marks", { handleConflictedItem:handleConflictedItem, 'endCallBack':function() {managePublishChange(callFwd)}});
+}
+const handleConflictedItem = function (onlineItem, storedLocalitem ){
+  console.warn('handleConflictedItem: Syncing conflict arised in syncing at'+new Date())
+  console.warn({onlineItem, storedLocalitem})
 }
 var managePublishChange = function(callFwd){
   //onsole.log("managePublishChange - list now ",vulog.data.publishChange);
-  if (!callFwd) callFwd = function(thing) {/*console.log(thing)*/}
+  if (!callFwd) callFwd = function(thing) {/*onsole.log(thing)*/}
 
   if (vulog.data.publishChange && vulog.data.publishChange.length>0) {
       var thePath = vulog.data.publishChange[vulog.data.publishChange.length-1];
@@ -315,7 +320,7 @@ request_api.newpage = function(request, sender, sendResponse) {
     delete request.props.vulog_3rdParties;
     delete request.props.vulog_cookies;
 
-    let current_mark = vulog.queryLatest('marks', {purl:request.props.purl})
+    let current_mark = vulog.queryLatest('marks', {purl:request.props.purl});
     if (isPaused){
       iconpath = (current_mark? ICON_PATHS.red:ICON_PATHS.paused)
       sendResponse ({success:false})
@@ -410,9 +415,11 @@ request_api.searchLocally = function(request, sender, sendResponse) {
   let current_item = theList.length;
   let foundcounter=0;
 
+  console.log('searchlocally params',params)
+
   while (--current_item>=0 && results.length<params.count) {
       aLog = theList[current_item];
-      if (!aLog.fj_deleted && aLog.url) {
+      if (aLog && !aLog.fj_deleted && aLog.url) {
           if (params.words && params.words.length>0) {
               var gotHit = true;
               for (j=0;j<params.words.length;j++) {
@@ -426,8 +433,12 @@ request_api.searchLocally = function(request, sender, sendResponse) {
                         aLog.vulog_kword2.join(' ').toLowerCase().indexOf(params.words[j])>=0
                     )
                   ) {
-                    gotHit = true;
-                } else {gotHit = false;}
+                    // do nothing
+                    console.log("got hit for "+params.words[j])
+                } else {
+                  gotHit = false;
+                  console.log("NO NO hit for "+params.words[j])
+                }
               }
           } else if (!params.words || params.words.length==0){
             gotHit = true;
@@ -446,7 +457,14 @@ request_api.searchLocally = function(request, sender, sendResponse) {
 }
 request_api.trySyncing = function (request, sender, sendResponse) {
   //
-  trySyncing(sendResponse)
+  if (!vulog.data.freezr_server_address) {
+    sendResponse({success:false,error:"You need to be connected to a ceps server to sync"})
+  } else if (syncinprogress) {
+    sendResponse({success:false,error:"Already syncing"})
+  } else{
+    sendResponse({success:true})
+    trySyncing()
+  }
 }
 
 function wordsInList1InList2 (requiredWords, wordsToCheck) {
@@ -498,9 +516,9 @@ request_api.getPageData = function(request, sender, sendResponse) {
     let master_page = vulog.queryLatest("logs", {purl:request.purl});
     if (request.tabinfo && request.tabinfo.tabid && logs_details_in_RAM[request.tabinfo.tabid] && logs_details_in_RAM[request.tabinfo.tabid].purl==request.purl) {
       details.current_log = logs_details_in_RAM[request.tabinfo.tabid]
-      details.current_log.vulog_visit_details = master_page.vulog_visit_details // RAM has cookie details and master_page has visit details
+      details.current_log.vulog_visit_details = master_page? master_page.vulog_visit_details:[] // RAM has cookie details and master_page has visit details
     } else {
-      console.warn("NO log from logs_details_in_RAM - got from vulog")
+      console.warn("NO log from logs_details_in_RAM - got from vulog",request.tabinfo,logs_details_in_RAM[request.tabinfo.tabid])
       details.current_log= master_page
     }
     if (!details.current_log && request.tabinfo) details.current_log = convert_tabinfo_to_log(request.tabinfo)
@@ -624,7 +642,15 @@ const get_mark_or_log = function(purl, idcheck) {
     }
   } else {
     let logtomark = vulog.queryLatest('logs', {purl:purl})
-    return [null, null, logtomark]
+    if (logtomark) {
+      current_mark = convert_log_to_mark(logtomark)
+    } else { // logging has been or had been paused
+      for (var tabid in logs_details_in_RAM) {
+        if (!current_mark && logs_details_in_RAM[tabid].purl == purl) current_mark = convert_log_to_mark(logs_details_in_RAM[tabid])
+      }
+    }
+    let err = current_mark ? null : {error:("Could not retrieve mark to complete the operation")}
+    return [err, current_mark]
   }
 }
 
@@ -643,7 +669,7 @@ const convert_tabinfo_to_log = function (tabinfo) {
 }
 const convert_log_to_mark = function (logtomark) {
   let newmark = {vulog_mark_tags:[],vulog_highlights:[],vulog_mark_notes:'',vulog_mark_stars:[]}
-  const ToTransfer = ['url','purl', 'description','domain_app','title','image','keywords', 'type', 'vulog_favIconUrl', 'vulog_kword2','vulog_timestamp']
+  const ToTransfer = ['url','purl', 'description','domain_app','title','author','image','keywords', 'type', 'vulog_favIconUrl', 'vulog_kword2','vulog_timestamp']
   ToTransfer.forEach((item) => {
     if (logtomark[item]) {
       newmark[item] = JSON.parse(JSON.stringify(logtomark[item]));
@@ -673,13 +699,12 @@ request_api.mark_star = function (request, sender, sendResponse) {
   */
   //onsole.log(request)
   let iconpath
-  let [err, current_mark, logtomark] = get_mark_or_log(request.purl, request.id)
+  let [err, current_mark] = get_mark_or_log(request.purl, request.id)
   if (err) {
     console.warn(err)
     sendResponse({error:"Error getting marks. Please refresh the page to try again."})
   } else {
     iconpath = ICON_PATHS.red
-    if (logtomark) current_mark = convert_log_to_mark(logtomark)
     if (request.doAdd) { //
       current_mark.vulog_mark_stars = add_nonduplicate_object(current_mark.vulog_mark_stars, request.theStar)
       jlos_mark_changed(current_mark)
@@ -697,11 +722,12 @@ request_api.mark_star = function (request, sender, sendResponse) {
     //onsole.log("current_mark now",current_mark)
     if (request.publishChange) handlepublicchange(current_mark);
     setTimeout(trySyncing,100)
-    sendResponse ({success:true, current_mark:current_mark, logconverted:logtomark })
+    sendResponse ({success:true, current_mark:current_mark })
     if (request.tabinfo && request.tabinfo.tabid){ // ie marked from popup
       chrome.browserAction.setIcon({path:iconpath , tabId: request.tabinfo.tabid}, function(){})
     }
     saveToChrome(false, null, "mark_star")
+
   }
 }
 const hasNomarks = function (mark){
@@ -723,13 +749,12 @@ request_api.save_notes = function (request, sender, sendResponse) {
   }
   */
 
-  let [err, current_mark, logtomark] = get_mark_or_log(request.purl, request.id)
+  let [err, current_mark] = get_mark_or_log(request.purl, request.id)
   if (err) {
     console.warn(err)
     sendResponse({error:"error getting data - please try again"})
   } else {
     //onsole.log("logtomark",logtomark,"current_mark",current_mark)
-    if (logtomark) current_mark = convert_log_to_mark(logtomark)
     current_mark.vulog_mark_notes=request.notes
     current_mark.vulog_mark_tags=(request.tags.length==1 && request.tags[0]=="")?[]:request.tags;
     setTimeout(trySyncing,100)
@@ -738,29 +763,31 @@ request_api.save_notes = function (request, sender, sendResponse) {
       iconpath = vulog.data.pause_vulog?ICON_PATHS.paused:ICON_PATHS.norm;
       vulog.markDeleted('marks', current_mark, {idType:'both'})
     } else {
-      iconpath = ICON_PATHS.red}
+      iconpath = ICON_PATHS.red
+      jlos_mark_changed(current_mark)
+    }
 
-    sendResponse ({success:true, current_mark:current_mark, logconverted:logtomark })
+    sendResponse ({success:true, current_mark:current_mark})
     let tabId = (request.tabinfo && request.tabinfo.tabid)? request.tabinfo.tabid : ((sender && sender.tab.id)? sender.tab.id:null)
     //if (tabId)   (commented to see if errors occur... )
     chrome.browserAction.setIcon({path:iconpath , tabId: tabId}, function(){
       saveToChrome(false, null, "save_notes");
     })
+
   }
 }
 
 request_api.newHighlight = function (request, sender, sendResponse) {
   //chrome.runtime.sendMessage({purl:parsedPage.props.purl, highlight:the_highlight, msg:"newHighlight"}
-  let [err, current_mark, logtomark] = get_mark_or_log(request.purl, request.id)
+  let [err, current_mark] = get_mark_or_log(request.purl, request.id)
   if (err) {
     console.warn(err)
-    sendResponse({error:"error getting online data - please try again"})
+    sendResponse(err)
   } else {
-    if (logtomark) current_mark = convert_log_to_mark(logtomark)
     if (!current_mark.vulog_highlights) current_mark.vulog_highlights = []
     current_mark.vulog_highlights.push(request.highlight);
     setTimeout(trySyncing,100)
-    sendResponse ({success:true, current_mark:current_mark, logconverted:logtomark })
+    sendResponse ({success:true, current_mark:current_mark})
     let tabId = request.tabinfo?request.tabinfo.tabid:((sender.tab && sender.tab.id)?sender.tab.id:null )
     if (tabId) {chrome.browserAction.setIcon({path:ICON_PATHS.red , tabId: tabId}, function(){
         saveToChrome(false, null, "newHighlight");
@@ -771,16 +798,15 @@ request_api.newHighlight = function (request, sender, sendResponse) {
 
 request_api.copyHighlights = function (request, sender, sendResponse) {
   //chrome.runtime.sendMessage({purl:parsedPage.props.purl, highlights:vulog_overlay_global.redirect_mark.vulog_highlights, msg:"copyHighlights"},
-  let [err, current_mark, logtomark] = get_mark_or_log(request.purl)
+  let [err, current_mark] = get_mark_or_log(request.purl)
   if (err) {
     console.warn(err)
     sendResponse({error:"error getting online data - please try again"})
   } else {
-    if (logtomark) current_mark = convert_log_to_mark(logtomark)
     if (!current_mark.vulog_highlights) current_mark.vulog_highlights = []
     request.highlights.forEach(ahigh => current_mark.vulog_highlights.push(ahigh));
     setTimeout(trySyncing,100)
-    sendResponse ({success:true, current_mark:current_mark, logconverted:logtomark })
+    sendResponse ({success:true, current_mark:current_mark })
     let tabId = request.tabinfo?request.tabinfo.tabid:((sender.tab && sender.tab.id)?sender.tab.id:null )
     if (tabId) {chrome.browserAction.setIcon({path:ICON_PATHS.red , tabId: tabId}, function(){
         saveToChrome(false, null, "copyHighlights");
@@ -792,11 +818,10 @@ request_api.copyHighlights = function (request, sender, sendResponse) {
 
 request_api.deleteHighlight = function (request, sender, sendResponse) {
   //msg: "deleteHighlight", purl:marks.current.purl , h_date:h_date
-  let [err, current_mark, logtomark] = get_mark_or_log(request.purl, null)
+  let current_mark = vulog.queryLatest('marks', {purl:request.purl})
   let success = false, iconpath
-  if (err || !current_mark) {
-    console.warn(err)
-    sendResponse({error:"Could not retrieve mark on deleteHighlight"})
+  if (!current_mark) {
+    sendResponse({error:"Internal error: Could not retrieve mark on deleteHighlight"})
   } else {
     for (let i = current_mark.vulog_highlights.length-1; i>=0; --i) {
       let ahighlight = current_mark.vulog_highlights[i]
@@ -811,7 +836,7 @@ request_api.deleteHighlight = function (request, sender, sendResponse) {
       vulog.markDeleted('marks', current_mark, {idType:'both'})
     } else {iconpath=ICON_PATHS.red}
     setTimeout(trySyncing,100)
-    sendResponse ({success:true, current_mark:current_mark, logconverted:logtomark })
+    sendResponse ({success:true, current_mark:current_mark })
     saveToChrome(false, null, "deleteHighlight")
   }
 }
@@ -819,18 +844,14 @@ request_api.deleteHighlight = function (request, sender, sendResponse) {
 request_api.getMarkFromVulog = function (request, sender, sendResponse) {
   //onsole.log("get mark for purl ",request.purl)
   //chrome.runtime.sendMessage({purl:parsedPage.props.purl, highlight:the_highlight, msg:"newHighlight"}
-  let [err, current_mark, logtomark] = get_mark_or_log(request.purl, request.id)
-  if (err) {
-    console.warn(err)
-    sendResponse({error:"error getting online data - please try again"})
-  } else {
-    let redirectedmark=null
-    if (sender.tab && sender.tab.id && redirect_item && redirect_item[sender.tab.id]
-        && request.purl == redirect_item[sender.tab.id].purl) {
-      redirectedmark = redirect_item[sender.tab.id]
-    }
-    sendResponse ({success:true,mark:current_mark,redirectedmark:redirectedmark,haveFreezr:freezr_server_address})
+  let current_mark = vulog.queryLatest('marks', {purl:request.purl})
+  let redirectedmark=null
+  if (sender.tab && sender.tab.id && redirect_item && redirect_item[sender.tab.id]
+      && request.purl == redirect_item[sender.tab.id].purl) {
+    redirectedmark = redirect_item[sender.tab.id]
   }
+  sendResponse ({success:true,mark:current_mark,redirectedmark:redirectedmark,haveFreezr:vulog.data.freezr_server_address})
+
 }
 request_api.remove_redirect = function (request, sender, sendResponse) {
   redirect_item[sender.tab.id] = null;
@@ -852,17 +873,17 @@ request_api.newOnlineMarks = function (request, sender, sendResponse) {
   if (request.marks && request.marks.length>0) {
     request.marks.forEach((mark, i) => {
       mark_on_vulog = vulog.queryLatest('marks', {_id:mark._id})
-      if (!mark_on_vulog ) vulog.data.marks.push(mark)
-      vulog.data.marks.sort(sortBycreatedDate)
-      sendResponse({success:true})
+      if (mark && mark._id && !mark_on_vulog ) vulog.data.marks.push(mark)
     });
+    vulog.data.marks.sort(sortBycreatedDate)
+    sendResponse({success:true})
   }
 }
 request_api.getMarkOnlineInBg = function (request, sender, sendResponse) {
   //chrome.runtime.sendMessage({msg: "onlineMark", purl:purl, mark:returndata.results[0]}, function(response) {
   freezr.ceps.getquery({'collection':'marks', 'q':{'purl':request.purl}}, function (returndata) {
     if (returndata.err || returndata.error) {
-      console.warn("Could not connect to server to check marks for overlay ",returndata)
+        if (!returndata.errorCode || returndata.errorCode!="noServer") console.warn("Could not connect to server to check marks for overlay ",returndata)
     } else if (returndata || returndata.length>0){
       vulog.data.marks.push(returndata[0])
       vulog.data.marks.sort(sortBycreatedDate)

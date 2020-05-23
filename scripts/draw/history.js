@@ -26,7 +26,7 @@ const history = {
     this.doSearch();
   },
   doSearch: function (reinit) {
-    let searchTerms = this.removeSpaces(dg.el('idSearchHistoryBox').textContent).toLowerCase()
+    let searchTerms = this.removeSpacesEtc(dg.el('idSearchHistoryBox').textContent).toLowerCase()
     if (search_state.last_words_searched!=searchTerms || reinit) this.init_state();
     search_state.last_words_searched=searchTerms;
 
@@ -39,7 +39,7 @@ const history = {
         //onsole.log("history",response)
         if (!response || !response.success) {
             showWarning("Error trying to do backgroundLocalSearch");
-        } else {
+        } else if (response.results.length>0 || mark_search.allresults.length ==0) {
           // {success:true, results:results, nomore: current_item==0}
           search_state.allresults.push( response.results)
           search_state.nomore = response.nomore
@@ -234,12 +234,17 @@ const history = {
   },
 
   // utilities
-  removeSpaces : function(aText) {
+  removeSpacesEtc : function(aText) {
       aText = aText.replace(/&nbsp;/g," ").trim();
+      aText = aText.replace(/\//g," ").trim();
+      aText = aText.replace(/,/g," ").trim();
+      aText = aText.replace(/\./g," ").trim();
+      aText = aText.replace(/\:/g," ").trim();
+      aText = aText.replace(/\-/g," ").trim();
       while (aText.indexOf("  ")>-1) {
           aText = aText.replace(/  /," ");
       }
-      return aText;
+      return aText.toLowerCase();
   },
   timeSpentify: function (aTime) {
       //

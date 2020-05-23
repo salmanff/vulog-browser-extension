@@ -121,10 +121,3 @@ if (
 } else {
   document.addEventListener("DOMContentLoaded", initiate_highlights);
 }
-
-
-// refresh page...
-chrome.runtime.onMessage.addListener( function(request, sender, sendResponse) {
-  setTimeout(function(){window.location.reload(false)},50)
-  sendResponse({success: true});
-});

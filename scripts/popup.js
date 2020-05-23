@@ -1,13 +1,13 @@
 /*
     vuLog_popup.js
-    info.freezr.vulog - chrome app for browser view history and book marking
+    com.salmanff.vulog - chrome app for browser view history and book marking
     version 0.0.2 - march 2020
 
 
 */
 // already defined in freezr_app_post_scripts
 freezr_app_version = "0.0.104";
-freezr_app_name = "info.freezr.vulog";
+freezr_app_name = "com.salmanff.vulog";
 freezr_app_display_name = "Vulog - a CEPS compatible app";
 const tab_open_time = new Date().getTime()
 var freezr_app_token, freezr_user_id, freezr_server_address;
@@ -16,11 +16,11 @@ var recording_paused, warningTimeOut, errCommToBackground=false, gotBullHornPubl
 var current_log
 var tabinfo
 
+if (navigator.platform.toUpperCase().indexOf('MAC')>=0) dg.el('topBar').style.height='33px';
 chrome.tabs.query({active:true,currentWindow:true},function(tabArray){
   var purl;
   if (tabArray && tabArray.length>0 && tabArray[0].url){
-    //onsole.log(tabArray[0])
-    purl = corePath(tabArray[0].url);
+      purl = corePath(tabArray[0].url);
     tabinfo = {
       url: tabArray[0].url,
       purl: purl,
@@ -30,7 +30,9 @@ chrome.tabs.query({active:true,currentWindow:true},function(tabArray){
   } else {
     showWarning("Error trying to get information on the web page (2)");
   }
-  if (!purl) {
+  if (marks.viewMode=="markInTab") {
+      opentab('marks')
+  }if (!purl) {
     opentab('action')
     dg.el("userMarks_area").style.display="none";
     dg.el("thispage_title",{clear:true}).appendChild(dg.div("Could not get page info - no url available"))
@@ -97,13 +99,15 @@ chrome.tabs.query({active:true,currentWindow:true},function(tabArray){
   }
 });
 var opentab = function(tabName, options={}) {
-
-	var alltabs=["action",'trackers',"history","marks","more"]
-	alltabs.forEach (function(aTab) {
-		document.getElementById(aTab+"_tab").style = "display:"+ (aTab==tabName? "block;":"none;")
-		document.getElementById("click_gototab_"+aTab).className = "top_menu_item tm_"+(aTab==tabName? "opened":"closed");
-	})
-
+  if (marks.viewMode == 'popup'){
+  	var alltabs=["action",'trackers',"history","marks","more"]
+  	alltabs.forEach (function(aTab) {
+  		document.getElementById(aTab+"_tab").style = "display:"+ (aTab==tabName? "block;":"none;")
+  		document.getElementById("click_gototab_"+aTab).className = "top_menu_item tm_"+(aTab==tabName? "opened":"closed");
+  	})
+  } else { //viewMode=='markInTab'
+    tabName = "marks"
+  }
 	if (tabName=="history") {
     if (dg.el('vulog_history_records').innerHTML=="") {
       history.clear_search()
@@ -181,6 +185,9 @@ var opentab = function(tabName, options={}) {
             case 'closeWarnings':
                 showWarning();
                 break;
+            case 'openpopupintab':
+                chrome.tabs.create({url : "static/markInTab.html"});
+                break;
             default:
                  console.warn('undefined click ')
         }
@@ -200,15 +207,16 @@ var opentab = function(tabName, options={}) {
       }
   }
   document.getElementById('idTagBox').onkeypress= function (evt) {
-      if (evt.keyCode == 13 || evt.keyCode == 32) {
-          if (evt.keyCode == 13) evt.preventDefault();
-          saveNotesTags();
+      if (evt.keyCode == 13 || evt.keyCode == 32 || evt.keyCode == 9) {
+        if (evt.keyCode == 13 || evt.keyCode == 9) evt.preventDefault();
+        saveNotesTags();
       } else {
           turnOnSaveButt();
       }
   }
-  document.getElementById('idNotesBox').onkeypress= function (evt) {
-      if (evt.keyCode == 13 || evt.keyCode == 32) {
+  document.getElementById('idNotesBox').onkeydown= function (evt) {
+    console.log(evt.keyCode)
+      if (evt.keyCode == 13 || evt.keyCode == 32 || evt.keyCode == 9) {
           if (evt.keyCode == 13) evt.preventDefault();
           saveNotesTags();
       } else {
@@ -360,7 +368,7 @@ var toggleMainPageStar = function(theStar) {
         freezr.perms.getAllAppPermissions(function(resp) {
           let granted =false
           try {
-            granted= resp['info.freezr.vulog']['thisAppToThisApp'][0].granted
+            granted= resp['com.salmanff.vulog']['thisAppToThisApp'][0].granted
             if (!granted) showWarning("Pressing the Bullhorn icon makes this link PUBLIC, but you have not yet granted permission to share your items with the public. You can do that by pressing the freezr button on the top right.")
             else {
               showWarning("Pressing the Bullhorn icon makes this link PUBLIC. Press again if you are sure you want to move ahead");

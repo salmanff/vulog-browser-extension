@@ -18,16 +18,19 @@ a {
     width:600px;
     max-width:600px;
 }
+#markInTabWindow {
+  padding-left:20px;
+}
 #topBar {
 	margin:0;
 	left:0;
 	right:0px;
-  border-bottom: 3px solid blue;
+  border-bottom: 2px solid blue;
   font-size: 12px;
   background-color: whitesmoke;
   z-index: 10;
   top:0;
-  height: 32px;
+  height: 35px;
 }
 #top_logo{
     width: 45px;
@@ -39,6 +42,11 @@ a {
     font-size: 14px;
     margin-right: 20px;
     color:yellowgreen;
+}
+#click_openpopupintab {
+  cursor: pointer;
+  margin-bottom: 30px;
+  color:yellowgreen;
 }
 .top_menu_item {
     padding-left: 10px;
@@ -87,9 +95,10 @@ a {
 }
 .tabdiv{
     padding-left:10px;
-    overflow:scroll;
-    height:450px;
-    max-height:450px;
+    overflow-x:hidden;
+    overflow-y:scroll;
+    height:500px;
+    max-height:500px;
 }
 .page_title{
     padding-left: 60px;
@@ -304,6 +313,7 @@ a {
 .user_marks_area {
     margin-right: 105px;
     margin-left: 20px;
+    width: 400px;
     text-align: center;
 }
 #history_more {

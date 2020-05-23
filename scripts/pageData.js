@@ -176,6 +176,7 @@ const domainAppFromUrl = function (url){
   return temp
 }
 const pureUrlify = function(aUrl) {
+	if (!aUrl) return null
 	if (aUrl.indexOf('#')>0) aUrl = aUrl.slice(0,aUrl.indexOf('#'));
 	if (aUrl.slice(-1)=="/") {aUrl = aUrl.slice(0,-1);}
 	return aUrl.trim();
