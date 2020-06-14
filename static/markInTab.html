@@ -3,7 +3,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <link href="/freezrPublic/freezr_core.css" rel="stylesheet">
+    <link href="/freezr/freezr_core.css" rel="stylesheet">
     <link href="/static/popup.css" rel="stylesheet">
     <link rel="stylesheet" href="/static/font-awesome.min.css">
 
@@ -12,7 +12,7 @@
 
   <div id="topBar">
       <img id="top_logo" src="/vulog logo v1.png"/>
-      <span id="logo_text">vulog - Bookmarks and highliughts</span>
+      <span id="logo_text">vulog - Bookmarks and highlights</span>
   </div>
 
 	<div  id="markInTabWindow">
@@ -22,17 +22,20 @@
     </div>
 
     <div id="marks_tab">
+      <br/>
         <div class="inputHolder" id="marksInputHolder">
+            <div class="input_explain">Search your bookmarks with text or by clicking on the bookmark types below.</div>
             <div id="idSearchMarksBox" class="inputBox" contenteditable="true" data-placeholder=" &nbsp; Search"></div>
-            <span id="click_search_marks">Filter</span>
+            <span id="click_search_marks">Search</span>
             <div class="user_marks_area">
                 <span class="stars"></span>
                 <span class="fa fa-bookmark stars unchosen-star" id="click_filterStar_bookmark_0" ></span>
                 <span class="stars"></span>
                 <span class="fa fa-star stars unchosen-star" id="click_filterStar_star_0" ></span>
                 <span class="stars"></span>
-                <span class="stars"></span>
                 <span class="fa fa-inbox stars unchosen-star" id="click_filterStar_inbox_0" ></span>
+                <span class="stars"></span>
+                <span class="fa fa-archive stars unchosen-star" id="click_filterStar_archive_0" ></span>
                 <span class="stars"></span>
                 <span class="fa fa-bullhorn stars unchosen-star" id="click_filterStar_bullhorn_0" ></span>
                 <span class="stars"></span>
@@ -68,9 +71,10 @@
 
 
 
-    <script src="/freezrPublic/freezr_core.js"></script>
-    <script src="/freezrPublic/freezr_app_post_scripts.js"></script>
-    <script src="/freezrPublic/jlos-frozen.js"></script>
+    <script src="/freezr/freezr_pre_definitions.js"></script>
+    <script src="/freezr/freezr_core.js"></script>
+    <script src="/freezr/freezr_app_post_scripts.js"></script>
+    <script src="/freezr/jlos-frozen.js"></script>
     <script src="/scripts/draw/dgelements.js"></script>
     <script src="/scripts/draw/utils.js"></script>
     <script src="/scripts/draw/trackers.js"></script>

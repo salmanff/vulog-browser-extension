@@ -3,7 +3,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <link href="/freezrPublic/freezr_core.css" rel="stylesheet">
+    <link href="/freezr/freezr_core.css" rel="stylesheet">
     <link href="/static/popup.css" rel="stylesheet">
     <link rel="stylesheet" href="/static/font-awesome.min.css">
 
@@ -19,160 +19,176 @@
         <img id="top_logo" src="/vulog logo v1.png"/>
         <span id="logo_text">vulog</span>
         <span id="click_gototab_action" class="top_menu_item tm_opened">Current</span>
-        <span id="click_gototab_trackers" class="top_menu_item tm_closed">Trackers</span>
+        <span id="click_gototab_marks" class="top_menu_item tm_closed">Marks</span>
         <span id="click_gototab_history" class="top_menu_item tm_closed"> History</span>
-        <span id="click_gototab_marks" class="top_menu_item tm_closed"> Marks</span>
+        <span id="click_gototab_trackers" class="top_menu_item tm_closed">Trackers</span>
         <span id="click_gototab_more" class="top_menu_item tm_closed"> More</span>
     </div>
 
 
-		<br/>
-        <div class="tabdiv" >
-            <div id="action_tab" style="display:none">
-                <div id="thisPage_details" class="vulog_mainlogitem"> </div>
 
-                <div style="margin-top:10px;"> &nbsp; </div>
-                <div class="separator" > &nbsp; </div>
-                <div id="thispage_title" class="page_title">Marks: Add tags, bookmarks or notes to this page:</div>
-                <div id="current_tags"> </div>
+    <div class="tabdiv" >
+        <div id="action_tab" style="display:none">
+            <div id="thisPage_details" class="vulog_mainlogitem"> </div>
 
-                <div id="userMarks_area" class="user_marks_area" style="text-align:center">
-                    <span class="stars"></span>
-                    <span class="fa fa-bookmark stars unchosen-star" id="click_markStar_bookmark_0" ></span>
-                    <span class="stars"></span>
-                    <span class="fa fa-star stars unchosen-star" id="click_markStar_star_0" ></span>
-                    <span class="stars"></span>
-                    <span class="fa fa-inbox stars unchosen-star" id="click_markStar_inbox_0" ></span>
-                    <span class="stars"></span>
-                    <span class="stars"></span>
-                    <span class="stars"></span>
-                    <span class="fa fa-bullhorn stars unchosen-star" id="click_markStar_bullhorn_0" ></span>
+            <div style="margin-top:10px;"> &nbsp; </div>
+            <div class="separator" > &nbsp; </div>
+            <div id="thispage_title" class="page_title">Marks: Add tags, bookmarks or notes to this page:</div>
+            <div id="current_tags"> </div>
 
-                <br/>
+            <div id="userMarks_area" class="user_marks_area" style="text-align:center">
+                <span class="stars"></span>
+                <span class="stars"></span>
+                <span class="fa fa-bookmark stars unchosen-star" id="click_markStar_bookmark_0" title="bookmark"></span>
+                <span class="stars"></span>
+                <span class="fa fa-star stars unchosen-star" id="click_markStar_star_0" title="star"></span>
+                <span class="stars"></span>
+                <span class="fa fa-inbox stars unchosen-star" id="click_markStar_inbox_0" title="inbox"></span>
+                <span class="stars"></span>
+                <span class="fa fa-archive stars unchosen-star" id="click_markStar_archive_0" title="archive"></span>
+                <span class="stars"></span>
+                <span class="fa fa-bullhorn stars unchosen-star" id="click_markStar_bullhorn_0" title="bullhorn - Make Public"></span>
 
-                    <div class="inputHolder">
-                      <div class="vulog_title_emph"><span class="fa fa-tags littlestars unchosen-star" id="currentmarks_tags_0"></span>&nbsp; Tags</div>
-                      <div id="idTagBox" class="inputBox" contenteditable="true" data-placeholder=" &nbsp; Tags"></div>
-                    </div>
-                    <div class="inputHolder">
-                      <div class="vulog_title_emph"><span class="fa fa-sticky-note littlestars unchosen-star" id="currentmarks_notes_0">></span>&nbsp; Notes</div>
-                      <div id="idNotesBox" class="inputBox" contenteditable="true" data-placeholder=" &nbsp; Notes"></div>
-                    </div>
+            <br/>
 
-                    <div class="inputHolder">
-                        <div id="click_saveNotesTags_0" class="history_xtra_butt unchosen-star">Save Notes and Tags</div>
-                    </div>
-
-                    <div  style="display:none" >
-                      area formaking base64s ;)
-                      <input id="inputFileToLoad" type="file" />
-                        <div id="imgTest"></div>
-                    </div>
-
-                    <div id="highlights_area" class="inputHolder" style="display:none">
-                      <input id="inputFileToLoad" type="file" />
-                        <div id="imgTest"></div>
-                    </div>
-
-                    <div id="notloggedinmsg" class="inputHolder">
-                      You are not logged in. Please press the freezr button (top right) to log in to a CEPS compatible personal data store.<br/>
-                      More info at <a target='_blank' href='http://www.salmanff.com/ppage/2020-3-15-Why-CEPS-Matters'>salmanff/ceps</a>
-                    </div>
-
+                <div class="inputHolder">
+                  <div class="vulog_title_emph"><span class="fa fa-tags littlestars unchosen-star" id="currentmarks_tags_0"></span>&nbsp; Tags</div>
+                  <div id="idTagBox" class="inputBox" contenteditable="true" data-placeholder=" &nbsp; Tags"></div>
                 </div>
-            </div>
-
-            <div id="trackers_tab" class="text_in_tab" style="display:none">
-                <div class="inputHolder" id="trackersInputHolder" style="display:none">
-                  <div id="idSearchTrackersBox" class="inputBox" contenteditable="true" data-placeholder=" &nbsp; Search"></div>
-                  <span id="click_search_trackers">Search</span>
+                <div class="inputHolder">
+                  <div class="vulog_title_emph"><span class="fa fa-sticky-note littlestars unchosen-star" id="currentmarks_notes_0">></span>&nbsp; Notes</div>
+                  <div id="idNotesBox" class="inputBox" contenteditable="true" data-placeholder=" &nbsp; Notes"></div>
                 </div>
 
-                <div id="tracker_main">
+                <div class="inputHolder">
+                    <div id="click_saveNotesTags_0" class="history_xtra_butt unchosen-star">Save Notes and Tags</div>
                 </div>
 
-
-            </div>
-
-            <div id="history_tab" style="display:none">
-                    <div class="inputHolder" id="historyInputHolder">
-                      <div id="idSearchHistoryBox" class="inputBox" contenteditable="true" data-placeholder=" &nbsp; Search"></div>
-                      <span id="click_search_history">Search</span>
-                    </div>
-
-                    <div id="click_resetsearch"  class="history_xtra_butt">reset search</div>
-                    <div id="vulog_history_records"></div>
-                    <div id="history_more"></div>
-            </div>
-
-            <div id="marks_tab" style="display:none">
-              <div id="click_openpopupintab">
-                <span class="fa fa-share-square-o littlestars chosen-star" id="click_openpopupintab_0"></span>
-                <span id="click_openpopupintab_0">Open in new tab</span>
-              </div>
-                <div class="inputHolder" id="marksInputHolder">
-
-                    <div id="idSearchMarksBox" class="inputBox" contenteditable="true" data-placeholder=" &nbsp; Search"></div>
-                    <span id="click_search_marks">Filter</span>
-                    <div class="user_marks_area">
-                        <span class="stars"></span>
-                        <span class="fa fa-bookmark stars unchosen-star" id="click_filterStar_bookmark_0" ></span>
-                        <span class="stars"></span>
-                        <span class="fa fa-star stars unchosen-star" id="click_filterStar_star_0" ></span>
-                        <span class="stars"></span>
-                        <span class="stars"></span>
-                        <span class="fa fa-inbox stars unchosen-star" id="click_filterStar_inbox_0" ></span>
-                        <span class="stars"></span>
-                        <span class="fa fa-bullhorn stars unchosen-star" id="click_filterStar_bullhorn_0" ></span>
-                        <span class="stars"></span>
-                    </div>
+                <div style="display:none">
+                  area formaking base64s ;)
+                  <input id="inputFileToLoad" type="file" />
+                    <div id="imgTest"></div>
                 </div>
 
-                <div id="vulog_marks_records"></div>
-                <div id="marks_more"></div>
-
-
-
-            </div>
-            <div id="more_tab" style="display:none">
-                <br/>
-                <div class="moreTabButts">
-                    <span class="fa topBut_Mobile fa-pause" id="click_pause_0" ></span>
-                    <span id="click_pause_1" class="more_tab_butt_text">Pause Logging </span>
-                </div>
-                <div class="separator" > &nbsp; </div>
-                <br/>
-                <div class="moreTabText">
-                 To remove your history and marks from this device, press below. Note that the history uploaded to your freezr will remain. (To log in or log out to your freezr, press the freezr button on the top right.)
-                </div>
-                <div class="moreTabButts">
-                    <span class="fa topBut_Mobile fa-trash" id="click_removeLocalData_0" ></span>
-                    <span id="click_removeLocalData_1" class="more_tab_butt_text"> Remove ALL locally stored data </span>
-                </div>
-                <br/>
-                <div class="moreTabButts">
-                    <span class="fa topBut_Mobile fa-trash" id="click_removeHistoryOnly_0" ></span>
-                    <span id="click_removeHistoryOnly_1" class="more_tab_butt_text"> Remove locally history only. (Your marks will stay.)</span>
+                <div id="highlights_area" class="inputHolder" style="display:none">
                 </div>
 
-                <div class="separator" > &nbsp; </div>
-
-                <div class="moreTabButts">
-                    <br/>
-                    <span class="fa topBut_Mobile fa-refresh" id="click_trySyncing_0" ></span>
-                    <span id="click_trySyncing_1" class="more_tab_butt_text"> Try Syncing Now</span>
-                    <br/>
+                <div id="notloggedinmsg" class="inputHolder">
+                  You are not logged in. Please press the freezr button (top right) to log in to a CEPS compatible personal data store.<br/>
+                  More info at <a target='_blank' href='http://www.salmanff.com/ppage/2020-3-15-Why-CEPS-Matters'>salmanff/ceps</a>
                 </div>
-
-                <div class="separator" > &nbsp; </div>
 
             </div>
         </div>
 
+        <div id="marks_tab" style="display:none">
+          <div id="click_openpopupintab">
+            <span class="fa fa-share-square-o littlestars chosen-star" id="click_openpopupintab_0"></span>
+            <span id="click_openpopupintab_0">Open bookmarks in new browser tab.</span>
+          </div>
+            <div class="inputHolder" id="marksInputHolder">
+              <div class="input_explain">
+                Search your bookmarks with text or by clicking on the bookmark types below.
+              </div>
 
-    <script src="/freezrPublic/freezr_core.js"></script>
-    <script src="/freezrPublic/freezr_app_post_scripts.js"></script>
-    <script src="/freezrPublic/jlos-frozen.js"></script>
+                <div id="idSearchMarksBox" class="inputBox" contenteditable="true" data-placeholder=" &nbsp; Search"></div>
+                <span id="click_search_marks">Search</span>
+                <div class="user_marks_area">
+                    <span class="stars"></span>
+                    <span class="stars"></span>
+                    <span class="fa fa-bookmark stars unchosen-star" id="click_filterStar_bookmark_0" title="Bookmark - click to filter"></span>
+                    <span class="stars"></span>
+                    <span class="fa fa-star stars unchosen-star" id="click_filterStar_star_0" title="Star - click to filter"></span>
+                    <span class="stars"></span>
+                    <span class="fa fa-inbox stars unchosen-star" id="click_filterStar_inbox_0" title="Inbox - click to filter"></span>
+                    <span class="stars"></span>
+                    <span class="fa fa-archive stars unchosen-star" id="click_filterStar_archive_0" title="Archive - click to filter"></span>
+                    <span class="stars"></span>
+                    <span class="fa fa-bullhorn stars unchosen-star" id="click_filterStar_bullhorn_0" title="Bullhorn - click to filter"></span>
+                    <span class="stars"></span>
+                </div>
+            </div>
+
+            <div id="vulog_marks_records"></div>
+            <div id="marks_more"></div>
+
+
+
+        </div>
+
+        <div id="history_tab" style="display:none">
+                <div class="inputHolder" id="historyInputHolder">
+                  <br/>
+                  <div class="input_explain">
+                    Search your browsing history.
+                  </div>                  <div id="idSearchHistoryBox" class="inputBox" contenteditable="true" data-placeholder=" &nbsp; Search"></div>
+                  <span id="click_search_history">Search</span>
+                </div>
+
+                <div id="click_resetsearch"  class="history_xtra_butt">reset search</div>
+                <div id="vulog_history_records"></div>
+                <div id="history_more"></div>
+        </div>
+
+        <div id="trackers_tab" class="text_in_tab" style="display:none">
+              <br/>
+              <div class="inputHolder" id="trackersInputHolder" style="display:none">
+
+              <div id="idSearchTrackersBox" class="inputBox" contenteditable="true" data-placeholder=" &nbsp; Search"></div>
+              <span id="click_search_trackers">Search</span>
+            </div>
+
+            <div id="tracker_main">
+            </div>
+
+
+        </div>
+
+        <div id="more_tab" style="display:none">
+            <br/>
+            <br/>
+            <br/>
+            <div class="moreTabButts">
+                <span class="fa topBut_Mobile fa-pause" id="click_pause_0" ></span>
+                <span id="click_pause_1" class="more_tab_butt_text">Pause Logging </span>
+            </div>
+            <div class="separator" > &nbsp; </div>
+            <br/>
+            <div class="moreTabText">
+             To remove your history and marks from this device, press below. Note that the history uploaded to your freezr will remain. (To log in or log out to your freezr, press the freezr button on the top right.)
+            </div>
+            <div class="moreTabButts">
+                <span class="fa topBut_Mobile fa-trash" id="click_removeLocalData_0" ></span>
+                <span id="click_removeLocalData_1" class="more_tab_butt_text"> Remove ALL locally stored data </span>
+            </div>
+            <br/>
+            <div class="separator" > &nbsp; </div>
+            <br/>
+
+            <div class="moreTabButts">
+                <span class="fa topBut_Mobile fa-trash" id="click_removeHistoryOnly_0" ></span>
+                <span id="click_removeHistoryOnly_1" class="more_tab_butt_text"> Remove locally history only. (Your marks will stay.)</span>
+            </div>
+            <br/>
+            <div class="separator" > &nbsp; </div>
+
+            <div class="moreTabButts">
+                <br/>
+                <span class="fa topBut_Mobile fa-refresh" id="click_trySyncing_0" ></span>
+                <span id="click_trySyncing_1" class="more_tab_butt_text"> Try Syncing Now</span>
+                <br/>
+            </div>
+            <br/>
+            <div class="separator" > &nbsp; </div>
+
+        </div>
+    </div>
+
+
+    <script src="/freezr/freezr_pre_definitions.js"></script>
+    <script src="/freezr/freezr_core.js"></script>
+    <script src="/freezr/freezr_app_post_scripts.js"></script>
+    <script src="/freezr/jlos-frozen.js"></script>
     <script src="/scripts/draw/dgelements.js"></script>
     <script src="/scripts/draw/utils.js"></script>
     <script src="/scripts/draw/trackers.js"></script>
