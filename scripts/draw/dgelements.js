@@ -1,6 +1,6 @@
 
 // originated from David Gilbertson (dg)
-// hackernoon.com/how-i-converted-my-react-app-to-vanillajs-and-whether-or-not-it-was-a-terrible-idea
+// hackernoon.com/how-i-converted-my-react-app-to-vanillajs-and-whether-or-not-it-was-a-terrible-idea-4b14b1b2faff
 // v 0.0.02
 
 var dg = {

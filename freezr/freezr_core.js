@@ -306,7 +306,6 @@ freezr.utils.ping = function (options, callback) {
   // options can be password and appName (Not functional)
   var url = '/ceps/ping'
   freezerRestricted.connect.read(url, options, function (error, resp) {
-    console.log({ error, resp })
     if (error || !resp || resp.error) {
       callback(error || new Error((resp && resp.error) ? resp.error : 'unkown error'))
     } else if (!resp.server_type) {
