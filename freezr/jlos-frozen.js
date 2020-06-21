@@ -1,4 +1,4 @@
-/* v2020-05 update
+/* v2020-06 update
 JLOS - Json Local Storage
 JLOS is a simple object for storing data in local storage, without using the filesystem for archiving data.
 JLOS-frozen has additional syncing functionality for freezr

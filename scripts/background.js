@@ -10,7 +10,7 @@
 /* global pureUrlify, domainAppFromUrl, addMetaTotags, addToListAsUniqueItems, cleanTextForEasySearch */ // from pageData.js
 /* global JLOS, jlosMarkChanged  */ // from jlos-frozen.js
 /* global freezr */ // from freezr_core.js
-/* global freezrMeta  */ // from freezr_pre_definitions
+/* global freezrMeta  */ // from freezr_app_init
 
 freezr.app.isWebBased = false
 freezrMeta.initialize('com.salmanff.vulog', '0.0.3', 'Vulog - bookmarker, highlighter and logger')

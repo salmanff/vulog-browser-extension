@@ -1,4 +1,4 @@
-/* Core freezr API - v0.0.122 - 2020-03
+/* Core freezr API - v0.0.13 - 2020-06
 
 The following variables need to have been declared freezrMeta
     freezr web based apps declare these automatically
@@ -9,7 +9,7 @@ The following variables need to have been declared freezrMeta
   => freezer_restricted => freezerRestricted
   callback mechanism
 */
-/* global freezrMeta */ // from html or from freezr_pre_definitions
+/* global freezrMeta */ // from html or from freezr_app_init
 /* global FormData, XMLHttpRequest, confirm, screen */ // from system
 /* exported freepr */ //
 

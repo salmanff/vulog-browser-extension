@@ -15,6 +15,16 @@ var freezrMeta={}
 var freezrMeta.appName = (exports && exports.structure && exports.structure.meta && exports.structure.meta.app_name)? exports.structure.meta.app_name: "";
 var freezrMeta.appversion = (exports && exports.structure && exports.structure.meta && exports.structure.meta.app_version)? exports.structure.meta.app_version: "N/A";
 var freezrMeta.appDisplayName = (exports && exports.structure && exports.structure.meta && exports.structure.meta.app_display_name)? exports.structure.meta.app_display_name: freezrMeta.appName;
+
+// Electron specific:
+// window.nodeRequire = require;
+delete window.require
+delete window.exports
+delete window.module
+
+// all apps..
+var exports = { structure: null}
+
 */
 
 /* exported freezrMeta */

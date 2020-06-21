@@ -1,5 +1,6 @@
 // info.freezr.public -
 /*
+  This file is used for stand alone apps that do not run on the freezr server.
   for electron - script file to be included after freezr_app_init.js and app_config.js .
 */
 /* global freezr, freezerRestricted, freezrMeta, alert, confirm */

@@ -5,7 +5,7 @@
 /* global toggleCollapse */ // from utils
 /* global dg */ // from dgelements.js
 /* global showWarning */ // from popup.js
-/* global freezrMeta */ // from freezr_pre_definitions.js
+/* global freezrMeta */ // from freezr_app_init.js
 
 let markSearchState
 const MARK_SEARCH_STATE_INIT = {

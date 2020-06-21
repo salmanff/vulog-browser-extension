@@ -7,7 +7,7 @@
 
 /* global chrome */ // from system
 /* global dg */ // from dgelements.js
-/* global freezrMeta  */ // from freezr_pre_definitions
+/* global freezrMeta  */ // from freezr_app_init
 /* global freezr */ // from freezr_core.js
 /* global marks */ // from  marks.js
 /* global history */ // from  history.js

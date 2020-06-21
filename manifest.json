@@ -25,7 +25,7 @@
     }
   ],
   "background": {
-      "scripts": ["freezr/freezr_pre_definitions.js", "freezr/freezr_core.js" ,"freezr/jlos-frozen.js", "scripts/highlight.js" , "scripts/pageData.js",  "scripts/background.js"]
+      "scripts": ["freezr/freezr_app_init.js", "freezr/freezr_core.js" ,"freezr/jlos-frozen.js", "scripts/highlight.js" , "scripts/pageData.js",  "scripts/background.js"]
   },
 
   "icons": { "16": "static/vulog_logo_16.png", "48": "static/vulog_logo_48.png", "128": "static/vulog_logo_128.png" }
