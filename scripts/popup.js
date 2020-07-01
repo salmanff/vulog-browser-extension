@@ -209,7 +209,7 @@ document.getElementById('idSearchMarksBox').onkeypress = function (evt) {
     // pop_historian.doSearch('marks')
   }
 }
-document.getElementById('idTagBox').onkeypressb = function (evt) {
+document.getElementById('idTagBox').onkeypress = function (evt) {
   if (evt.keyCode === 13 || evt.keyCode === 32 || evt.keyCode === 9) {
     if (evt.keyCode === 13 || evt.keyCode === 9) evt.preventDefault()
     saveNotesTags()
@@ -217,7 +217,7 @@ document.getElementById('idTagBox').onkeypressb = function (evt) {
     turnOnSaveButt()
   }
 }
-document.getElementById('idNotesBox').onkeydown = function (evt) {
+document.getElementById('idNotesBox').onkeypress = function (evt) {
   if (evt.keyCode === 13 || evt.keyCode === 32 || evt.keyCode === 9) {
     if (evt.keyCode === 13) evt.preventDefault()
     saveNotesTags()
@@ -225,6 +225,7 @@ document.getElementById('idNotesBox').onkeydown = function (evt) {
     turnOnSaveButt()
   }
 }
+
 var turnOffSaveButt = function () {
   document.getElementById('click_saveNotesTags_0').className = 'history_xtra_butt unchosen-star'
 }

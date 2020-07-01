@@ -14,8 +14,12 @@ const vulogOverlayGlobal = {
     if (document.getElementById('vulog_overlay_outer')) document.getElementById('vulog_overlay_outer').remove()
   },
   timer: null,
-  extend_timer: function () { this.timer = setTimeout(this.close, 20000) },
+  extend_timer: function () {
+    clearTimeout(vulogOverlayGlobal.timer)
+    vulogOverlayGlobal.timer = setTimeout(this.close, 20000)
+  },
   toggleMark: function (theStar, starWasChosen) {
+    vulogOverlayGlobal.extend_timer()
     const thediv = document.getElementById('vulog_overlay_' + theStar + (starWasChosen ? '_ch' : '_nc'))
     if (thediv) {
       chrome.runtime.sendMessage({
@@ -34,6 +38,7 @@ const vulogOverlayGlobal = {
     }
   },
   copy_highs: function () {
+    vulogOverlayGlobal.extend_timer()
     if (!vulogOverlayGlobal.self_mark.vulog_highlights)vulogOverlayGlobal.self_mark.vulog_highlights = []
     vulogOverlayGlobal.redirect_mark.vulog_highlights.forEach(ahigh => vulogOverlayGlobal.self_mark.vulog_highlights.push(ahigh))
     chrome.runtime.sendMessage({ purl: parsedPage.props.purl, highlights: vulogOverlayGlobal.redirect_mark.vulog_highlights, msg: 'copyHighlights' },
@@ -116,6 +121,7 @@ const showVulogOverlay = function () {
     }
 
     const vulogOverlaySaveNotesTags = function () {
+      vulogOverlayGlobal.extend_timer()
       var theNotes = document.getElementById('vulog_overlay_notes').textContent
       var theTags = document.getElementById('vulog_overlay_tags').textContent.replace(/ {2}/g, ' ').trim().split(' ')
       if (theTags.length === 1 && theTags[0] === '') theTags = []

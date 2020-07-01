@@ -12,7 +12,7 @@
   border-radius: 5px;
   border: 2px double yellowgreen;
   height: fit-content;
-  width:180px;
+  width:200px;
   z-index:9999;
   padding:5px;
 }
@@ -33,6 +33,7 @@
 }
 .vulog_overlay_green{
   color:yellowgreen;
+  cursor: pointer;
 }
 .vulog_overlay_butt{
   text-align: center;
