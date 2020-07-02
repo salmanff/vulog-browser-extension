@@ -94,6 +94,8 @@ chrome.tabs.query({ active: true, currentWindow: true }, function (tabArray) {
                 opentab('action')
               }
             )
+          } else {
+            marks.current = {}
           }
         } else {
           opentab('action')
@@ -209,7 +211,7 @@ document.getElementById('idSearchMarksBox').onkeypress = function (evt) {
     // pop_historian.doSearch('marks')
   }
 }
-document.getElementById('idTagBox').onkeypress = function (evt) {
+document.getElementById('idTagBox').onkeydown = function (evt) {
   if (evt.keyCode === 13 || evt.keyCode === 32 || evt.keyCode === 9) {
     if (evt.keyCode === 13 || evt.keyCode === 9) evt.preventDefault()
     saveNotesTags()
@@ -217,7 +219,7 @@ document.getElementById('idTagBox').onkeypress = function (evt) {
     turnOnSaveButt()
   }
 }
-document.getElementById('idNotesBox').onkeypress = function (evt) {
+document.getElementById('idNotesBox').onkeydown = function (evt) {
   if (evt.keyCode === 13 || evt.keyCode === 32 || evt.keyCode === 9) {
     if (evt.keyCode === 13) evt.preventDefault()
     saveNotesTags()
@@ -400,6 +402,7 @@ var toggleMainPageStar = function (theStar) {
 var saveNotesTags = function () {
   var theNotes = document.getElementById('idNotesBox').textContent
   var theTags = document.getElementById('idTagBox').textContent.replace(/ {2}/g, ' ').trim().split(' ')
+  if (!marks.current) marks.current = {}
   marks.current.vulog_mark_notes = theNotes
   marks.current.vulog_mark_tags = theTags
   chrome.runtime.sendMessage({
