@@ -802,7 +802,7 @@ requestApi.deleteHighlight = function (request, sender, sendResponse) {
   } else {
     for (let i = currentMark.vulog_highlights.length - 1; i >= 0; --i) {
       const ahighlight = currentMark.vulog_highlights[i]
-      if (request.h_date === ahighlight.h_date) {
+      if (request.h_date === ''+ahighlight.h_date) {
         currentMark.vulog_highlights.splice(i, 1)
         success = true
         i = -1
