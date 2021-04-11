@@ -15,13 +15,12 @@ const MARK_SEARCH_STATE_INIT = {
   allresults: [],
   star_filters: []
 }
-const MARK_DIV_ID = 'vulog_marks_records'
 const MCSS = {
   LIGHT_GREY: 'rgb(151, 156, 160)',
   DARK_GREY: 'darkgrey',
   RED: 'indianred'
 }
-const MAIN_STARS = ['bookmark', 'star', 'inbox', 'archive', 'bullhorn']
+const MAIN_STARS = ['star', 'inbox', 'archive']
 const XTRA_STARS = ['tags', 'sticky-note', 'quote-left', 'quote-right']
 
 dg.addAttributeException('db_id')
@@ -36,39 +35,43 @@ const endsWith = function (longertext, checktext) {
 }
 
 var marks = {
+  mainDivId : 'vulog_marks_records', // default
   viewMode: (endsWith(window.location.pathname, 'markInTab.html') ? 'markInTab' : 'popup'),
   current: {},
-  init_state: function () {
+  init_state: function (divId) {
     // onsole.log("INIT STATE")
-    dg.el(MARK_DIV_ID, { clear: true })
+    if (divId) marks.maindivId = divId
+    dg.el(marks.mainDivId, { clear: true })
     markSearchState = JSON.parse(JSON.stringify(MARK_SEARCH_STATE_INIT))
   },
-  clearSearch: function () {
-    this.init_state()
+  clearSearch: function (params, divId) {
+    this.init_state(divId)
     MAIN_STARS.forEach(
-      function (aStar) { dg.el('click_filterStar_' + aStar + '_0').className = 'fa fa-' + aStar + ' stars ' + (aStar === 'archive' ? 'ex' : 'un') + 'chosen-star' }
+      function (aStar) { if (dg.el('click_filterStar_' + aStar + '_0')) dg.el('click_filterStar_' + aStar + '_0').className = 'fa fa-' + aStar + ' stars ' + (aStar === 'archive' ? 'ex' : 'un') + 'chosen-star' }
     )
-
-    dg.el('idSearchMarksBox').textContent = ''
-    this.doSearch()
+    if (dg.el('idSearchMarksBox') ) dg.el('idSearchMarksBox').textContent = ''
+    this.doSearch(params)
   },
-  doSearch: function (reinit) {
-    const searchTerms = this.removeSpacesEtc(dg.el('idSearchMarksBox').textContent).toLowerCase()
-    if (!markSearchState.lastWordsSearched || markSearchState.lastWordsSearched !== searchTerms || reinit) this.init_state()
-    markSearchState.lastWordsSearched = searchTerms
-    markSearchState.star_filters = []
-    MAIN_STARS.forEach(aStar => { if (dg.el('click_filterStar_' + aStar + '_0').className.includes(' chosen-star')) markSearchState.star_filters.push(aStar) })
-    markSearchState.exstar_filters = []
-    MAIN_STARS.forEach(aStar => { if (dg.el('click_filterStar_' + aStar + '_0').className.includes('exchosen-star')) markSearchState.exstar_filters.push(aStar) })
+  doSearch: function (queryParams, options) {
+    options = options || {}
+    if (!queryParams) {
+      const searchTerms = this.removeSpacesEtc(dg.el('idSearchMarksBox').textContent).toLowerCase()
+      if (!markSearchState.lastWordsSearched || markSearchState.lastWordsSearched !== searchTerms || options.reinit) this.init_state()
+      markSearchState.lastWordsSearched = searchTerms
+      markSearchState.star_filters = this.alwaysOnFilters || []
+      MAIN_STARS.forEach(aStar => { if (dg.el('click_filterStar_' + aStar + '_0') && dg.el('click_filterStar_' + aStar + '_0').className.includes(' chosen-star')) markSearchState.star_filters.push(aStar) })
+      markSearchState.exstar_filters = []
+      MAIN_STARS.forEach(aStar => { if (dg.el('click_filterStar_' + aStar + '_0') && dg.el('click_filterStar_' + aStar + '_0').className.includes('exchosen-star')) markSearchState.exstar_filters.push(aStar) })
 
-    var queryParams = {
-      words: ((searchTerms && searchTerms.length > 0) ? searchTerms.split(' ') : []),
-      star_filters: markSearchState.star_filters,
-      exstar_filters: markSearchState.exstar_filters,
-      skip: markSearchState.itemsFetched,
-      count: markSearchState.moreItems
+      queryParams = {
+        words: ((searchTerms && searchTerms.length > 0) ? searchTerms.split(' ') : []),
+        star_filters: markSearchState.star_filters,
+        exstar_filters: markSearchState.exstar_filters,
+        skip: markSearchState.itemsFetched,
+        count: markSearchState.moreItems
+      }
     }
-    // onsole.log(queryParams)
+    console.log({queryParams})
     chrome.runtime.sendMessage({ msg: 'searchLocally', list: 'marks', queryParams: queryParams }, function (response) {
       // onsole.log('search repsonse ',response)
       if (!response || !response.success) {
@@ -78,7 +81,7 @@ var marks = {
         markSearchState.allresults.push(response.results)
         markSearchState.nomore = response.nomore
         markSearchState.itemsFetched += response.results.length
-        dg.el(MARK_DIV_ID, { clear: true, top: true }).appendChild(marks.drawItems(response.results, markSearchState.allresults.length, markSearchState.nomore))
+        dg.el(marks.mainDivId, { clear: true, top: true }).appendChild(marks.drawItems(response.results, markSearchState.allresults.length, markSearchState.nomore))
       }
     })
   },
@@ -94,40 +97,6 @@ var marks = {
       })
     }
 
-    const moreHist = dg.el('marks_more', { clear: true })
-    if (markSearchState.allresults.length > 1) {
-      moreHist.appendChild(dg.span('Pages:'))
-      for (let i = 0; i < markSearchState.allresults.length; i++) {
-        if (page === i) {
-          moreHist.appendChild(dg.span(' .. '))
-        } else {
-          moreHist.appendChild(dg.span({
-            style: { color: 'cornflowerblue', cursor: 'pointer', 'margin-right': '3px' },
-            onclick: () => dg.el(MARK_DIV_ID, { clear: true, top: true }).appendChild(marks.drawItems(markSearchState.allresults[i], i, nomore))
-          }, (' ' + (i + 1) + ' ')))
-        }
-      }
-      moreHist.appendChild(dg.span({ style: { 'margin-right': '20px' } }, ' '))
-    }
-    if (nomore) {
-      const noMarks = (markSearchState.allresults.length === 1 && markSearchState.allresults[0].length === 0 && markSearchState.lastWordsSearched === '')
-      const noMoreText = noMarks ? ' You have no bookmarks. Go to the Current tab to bookmark this page.' : ' No more items stored locally'
-      moreHist.appendChild(dg.span({ style: { 'margin-left': '20px', color: (noMarks ? MCSS.red : MCSS.LIGHT_GREY) } }, noMoreText))
-      if (freezrMeta.appToken && !freezrMeta.appToken) { // temporarily disabled (appToken && !appToken)
-        moreHist.appendChild(dg.span({
-          style: { 'margin-left': '20px', color: 'cornflowerblue', cursor: 'pointer' },
-          onclick: function () {
-            console.log('todo - find online')
-          }
-        },
-        'Get more online items'))
-      }
-    } else {
-      moreHist.appendChild(dg.span({
-        style: { color: 'cornflowerblue', cursor: 'pointer', 'margin-left': '20px', 'padding-bottom': '20px' },
-        onclick: function () { marks.doSearch() }
-      }, 'More items'))
-    }
     return resultsdiv
   },
   drawItem: function (alog) {
@@ -324,7 +293,7 @@ var marks = {
           })
         },
         style: { display: 'none' }
-      }, 'Click to remove quote')
+      }, 'Click again here to remove quote')
       deleter.setAttribute('highlight-date', item.h_date)
     }
     if (options.show_display_errs && item.displayErr) {
@@ -333,19 +302,16 @@ var marks = {
     }
     return dg.div({ className: 'quote_outer' },
       dg.span({ className: 'quote_left' }),
-      dg.span({ className: 'quote_inner' },
-        dg.span({
-          style: { cursor: (options.include_delete ? 'pointer' : 'cursor') },
-          ondblclick: function (e) {
-            if (options.include_delete) {
-              e.target.style.color = (e.target.style.color === 'yellow' ? 'white' : 'yellow')
-              dg.toggleShow(e.target.parentElement.nextSibling.nextSibling)
-            }
+      dg.span({
+          className: 'quote_close',
+          onclick: function(e) {
+             dg.toggleShow(e.target.nextSibling.nextSibling.nextSibling)
           }
-        }, item.string),
+      }),
+      dg.span({ className: 'quote_inner' },
+        dg.span(item.string),
         displayErr),
       dg.span({ className: 'quote_right' }),
-
       deleter
     )
   },

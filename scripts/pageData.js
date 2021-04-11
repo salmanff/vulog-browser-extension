@@ -19,7 +19,7 @@ const getAllPageTags = function (options = { ignore_unknowns: true }) {
   try {
     parsedTags.vulog_cookies = getCookies()
   } catch (e) {
-    console.warn('Error getting cookie from ' + window.location.href, e)
+    console.warn('Error getting cookie from ' + window.location.href + ' \n '+ JSON.stringify(e))
     parsedTags.vulog_hidden_cees = true
   }
 

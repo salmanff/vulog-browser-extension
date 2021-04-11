@@ -7,7 +7,7 @@
 
 freezr.app.isWebBased = false
 document.addEventListener('DOMContentLoaded', function () {
-  freezr.utils.addFreezerDialogueElements()
+  //freezr.utils.addFreezerDialogueElements()
   if (freezr.initPageScripts) freezr.initPageScripts()
 })
 
@@ -38,36 +38,6 @@ freezerRestricted.menu.add_standAloneApp_login_dialogue = function (divToInsertI
   cont += '</div>'
   divToInsertIn.innerHTML = cont
 
-  freezerRestricted.menu.reset_login_butt_colors = function () {
-    const fullText = document.getElementById('freezr_server_name_input').innerText
-    const [hasHttp, hasLoginParams, server, userName, authPassword] = freezerRestricted.menu.parse_pds_name(fullText)
-    document.getElementById('freezr_pingprelogin_butt').className = ((hasHttp || freezrMeta.serverAddress) && !hasLoginParams) ? 'freezer_butt freezer_server_butt_notfloat' : 'freezer_butt_pressed freezer_server_butt_notfloat'
-    document.getElementById('freezr_authurl_login_butt').className = (hasLoginParams) ? 'freezer_butt freezer_server_butt_notfloat' : 'freezer_butt_pressed freezer_server_butt_notfloat'
-    return [hasHttp, hasLoginParams, server, userName, authPassword]
-  }
-  freezerRestricted.menu.parse_pds_name = function (fullText) {
-    let hasLoginParams = false
-    let server = ''
-    let userName = ''
-    let authPassword = ''
-    fullText = fullText || ''
-    const hasHttp = fullText.indexOf('http') === 0 && (fullText.indexOf('.') > 8 || fullText.indexOf('localhost:') > 6)
-    const serverparts = fullText.split('?')
-    server = serverparts[0]
-    // let haspath = server.slice(8).indexOf('/')>0
-    // let path = haspath? server.slice((9+server.slice(8).indexOf('/'))):''
-    // server = haspath? server.slice(0,(8+server.slice(8).indexOf('/'))):server
-    const queries = (serverparts.length > 1) ? serverparts[1].split('&') : null
-    if (queries && queries.length > 0) {
-      queries.forEach(query => {
-        if (query.split('=')[0] === 'user') userName = query.split('=')[1]
-        if (query.split('=')[0] === 'password') authPassword = query.split('=')[1]
-      })
-    }
-    hasLoginParams = (hasHttp && server && userName && authPassword) || false
-    // onsole.log({hasHttp, hasLoginParams, server, userName, authPassword})
-    return [hasHttp, hasLoginParams, server, userName, authPassword]
-  }
   freezerRestricted.menu.reset_login_butt_colors()
   document.getElementById('freezr_server_name_input').onkeypress = function (evt) {
     freezerRestricted.menu.reset_login_butt_colors()
@@ -165,6 +135,73 @@ freezerRestricted.menu.add_standAloneApp_login_dialogue = function (divToInsertI
   document.getElementById('freezr_server_login_butt').onclick = freezerRestricted.menu.loginmovesstep2
 }
 
+freezerRestricted.menu.reset_login_butt_colors = function () {
+  const fullText = document.getElementById('freezr_server_name_input').innerText
+  const [hasHttp, hasLoginParams, server, userName, authPassword] = freezerRestricted.menu.parse_pds_name(fullText)
+  document.getElementById('freezr_pingprelogin_butt').className = ((hasHttp || freezrMeta.serverAddress) && !hasLoginParams) ? 'freezer_butt freezer_server_butt_notfloat' : 'freezer_butt_pressed freezer_server_butt_notfloat'
+  document.getElementById('freezr_authurl_login_butt').className = (hasLoginParams) ? 'freezer_butt freezer_server_butt_notfloat' : 'freezer_butt_pressed freezer_server_butt_notfloat'
+  return [hasHttp, hasLoginParams, server, userName, authPassword]
+}
+freezr.utils.applogin = function (authUrl, cb) {
+  const [hasHttp, hasLoginParams, server, userName, authPassword] = freezerRestricted.menu.parse_pds_name(authUrl)
+  if (!hasLoginParams || !hasHttp || !userName || userName.length === 0 || !authPassword || authPassword.length === 0 || !server || server.length === 0) {
+    cb(new Error('You have enterred an invalid url.'))
+  } else if (!freezrMeta.appName) {
+    cb (new Error('developer error: variable freezrMeta.appName needs to be defined') )
+  } else {
+    freezrMeta.userId = userName
+    freezrMeta.serverAddress = server
+    if (freezrMeta.serverAddress.slice(freezrMeta.serverAddress.length - 1) === '/') freezrMeta.serverAddress = freezrMeta.serverAddress.slice(0, freezrMeta.serverAddress.length - 1)
+    freezr.utils.ping(null, function (error, resp) {
+      if (!resp || error) {
+        cb(new Error('Your PDS is unavailable, or the URL is badly configured. Please try later, or correct the url.'))
+        console.warn(error)
+      } else {
+        var theInfo = { username: freezrMeta.userId, password: authPassword, client_id: freezrMeta.appName, grant_type: 'password' }
+        freezerRestricted.connect.ask('/oauth/token', theInfo, function (error, resp) {
+          resp = freezr.utils.parse(resp)
+          if (error || (resp && resp.error)) {
+            console.warn(error || resp.error)
+            cb(error || resp.error)
+          } else if (!resp.access_token) {
+            cb(new Error ( 'Error logging you in. The server gave an invalid response.' ) )
+          } else if (resp.app_name !== freezrMeta.appName) {
+            cb(new Error ( 'Error - loggedin_app_name ' + resp.login_for_app_name + ' is not correct.' ) )
+          } else {
+            freezrMeta.appToken = resp.access_token
+            freezr.serverVersion = resp.freezr_server_version
+            freezr.app.offlineCredentialsExpired = false
+            cb(null, freezrMeta)
+          }
+        })
+      }
+    }, freezrMeta.appName)
+  }
+}
+freezerRestricted.menu.parse_pds_name = function (fullText) {
+  let hasLoginParams = false
+  let server = ''
+  let userName = ''
+  let authPassword = ''
+  fullText = fullText || ''
+  const hasHttp = fullText.indexOf('http') === 0 && (fullText.indexOf('.') > 8 || fullText.indexOf('localhost:') > 6)
+  const serverparts = fullText.split('?')
+  server = serverparts[0]
+  // let haspath = server.slice(8).indexOf('/')>0
+  // let path = haspath? server.slice((9+server.slice(8).indexOf('/'))):''
+  // server = haspath? server.slice(0,(8+server.slice(8).indexOf('/'))):server
+  const queries = (serverparts.length > 1) ? serverparts[1].split('&') : null
+  if (queries && queries.length > 0) {
+    queries.forEach(query => {
+      if (query.split('=')[0] === 'user') userName = query.split('=')[1]
+      if (query.split('=')[0] === 'password') authPassword = query.split('=')[1]
+    })
+  }
+  hasLoginParams = (hasHttp && server && userName && authPassword) || false
+  // onsole.log({hasHttp, hasLoginParams, server, userName, authPassword})
+  return [hasHttp, hasLoginParams, server, userName, authPassword]
+}
+
 freezerRestricted.menu.showOfflinePermissions = function (error, outerPermissions) {
   outerPermissions = freezerRestricted.utils.parse(outerPermissions)
 
@@ -257,13 +294,14 @@ freezerRestricted.menu.showOfflinePermissions = function (error, outerPermission
   }
 }
 
-freezr.utils.logout = function () {
+freezr.utils.logout = function (logoutCallback) {
   freezerRestricted.connect.ask('/v1/account/applogout', null, function (error, resp) {
+    console.log({error, resp})
     freezerRestricted.menu.close()
     if (!error || !resp.error || confirm('There was an error logging you out or connecting to the server. Do you want your login credentials removed?')) {
       document.cookie = 'app_token_' + freezrMeta.userId + '= null'
       freezrMeta.reset()
-      if (freezr.app.logoutCallback) freezr.app.logoutCallback(resp)
+      if (logoutCallback) logoutCallback(resp)
     }
   })
 }

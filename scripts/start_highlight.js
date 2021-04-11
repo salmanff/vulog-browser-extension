@@ -19,7 +19,6 @@ if (selectionString) {
     container = container.parentNode
   }
 
-  var color = 'yellowgreen' // todo: Get from preferences
   // onsole.log("Vu-highlights storing...: ",selection," from ",window.location.pathname)
   const theHighlight = {
     h_date: new Date().getTime(),
@@ -29,11 +28,13 @@ if (selectionString) {
     anchorOffset: selection.anchorOffset,
     focusNode: getQuery(selection.focusNode, 'focusnode'), // end of selection
     focusOffset: selection.focusOffset,
-    color: color
   }
   chrome.runtime.sendMessage({ purl: parsedPage.props.purl, highlight: theHighlight, msg: 'newHighlight' },
     function (resp) {
-      if (resp.error) console.warn('Error sending info to background ', parsedPage)
+      if (!resp || resp.error) console.warn('Error sending info to background ', parsedPage, resp)
+
+      //console.log('got a resp color ',resp.color)
+      let color = resp.color || 'yellowgreen' // todo: Get from preferences
       highlightFromSelection(selectionString, container, selection, color)
     }
   )

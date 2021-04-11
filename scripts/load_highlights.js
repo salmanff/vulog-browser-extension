@@ -35,13 +35,13 @@ const initiateHighlights = function () {
 }
 const showHighlights = function (showthis) {
   var displayErrs = []
-  let color = 'yellowgreen'
+  // let color = 'yellowgreen'
   if (showthis) {
-    if (showthis === 'redirect_mark') color = 'yellow'
-    if (vulogOverlayGlobal[showthis].vulog_highlights.length > 0) {
+    //if (showthis === 'redirect_mark') color = 'yellow'
+    if (vulogOverlayGlobal[showthis].vulog_highlights && vulogOverlayGlobal[showthis].vulog_highlights.length > 0) {
       const highlights = JSON.parse(JSON.stringify(vulogOverlayGlobal[showthis].vulog_highlights))
       highlights.forEach((aHighlight, idx) => {
-        if (!loadHighlights(aHighlight, color)) displayErrs.push({ err: true, idx: idx })
+        if (!loadHighlights(aHighlight)) displayErrs.push({ err: true, idx: idx })
         else if (aHighlight.display_err) displayErrs.push({ err: false, idx: idx })
       })
       vulogOverlayGlobal.shown_highlight = showthis
@@ -50,7 +50,8 @@ const showHighlights = function (showthis) {
   return displayErrs
 }
 
-function loadHighlights (highlightVal, color) {
+function loadHighlights (highlightVal) {
+  //console.log('loadHighlights',highlightVal)
   var selection = {
     anchorNode: elementFromQuery(highlightVal.anchorNode, 'anchor', highlightVal.string),
     anchorOffset: highlightVal.anchorOffset,
@@ -67,12 +68,13 @@ function loadHighlights (highlightVal, color) {
     console.warn('NO Anchor or focusNode...', selection)
     return false
   } else {
-    const success = highlightFromSelection(selectionString, container, selection, color) // returns true on success or false on err
+    const success = highlightFromSelection(selectionString, container, selection, highlightVal.color) // returns true on success or false on err
     if (!success) console.warn('could not load highlight ', selection)
     return success
   }
 }
 function elementFromQuery (storedQuery, eltype, thestring) {
+  //console.log('elementFromQuery',{thestring})
   let lastNode
   var aquery = storedQuery[0]
   if (!storedQuery || storedQuery.length === 0) console.warn('NO Query sent')
@@ -105,7 +107,7 @@ function elementFromQuery (storedQuery, eltype, thestring) {
 
     // put while statement to traverse
     if (!lastNode || !((lastNode.localName === undefined && storedQuery[0].type === 'text') ||
-        lastNode.localName === storedQuery[0].type)) console.warn('Got typemismatch on ', lastNode, storedQuery[0])
+        lastNode.localName === storedQuery[0].type)) console.warn('Got typemismatch on ', {lastNode, storedQuery, eltype, thestring})//lastNode, storedQuery[0])
     storedQuery.shift()
   }
 

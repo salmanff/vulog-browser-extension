@@ -1,32 +1,24 @@
 # vulog-browser-extension
 vulog is an extension app that allows you to (1) bookmark web pages pages, highlight text on those pages, and take notes, (2) save your browsing history,  and (3) see the cookies tracking you on various web sites, and delete them.
 
-Current tab
-Click on the vulog button to see the main "Current" tab, and tag a page or bookmark it using these buttons:
-- The 'bookmark' and 'star are buttons for regular bookmarking.
-- The 'Inbox' button is for items you want to read later. You can also right click on any web link on web pages you visit and add it to your vulog inbox right from the web page.
-- Links marked with 'archive' do not show in default search results when you do a search from the Marks tab.  For example, once you have read a page from your inbox,  you might want to remove the 'inbox' mark, and add it to your 'archive'.
-- The 'bullfrog' button makes the link public. Note that you need a CEPS compatible server to store your data and to publish it, if you want to use this feature. (See Below)
+Interacting with vulog
+- The pop-up - Press the vulog button at the top of your browser and the vulog pop-up appears. So you can bookmark the page you are on, take notes and view your inbox. You can also click on a link to view your bookmarks in a browser tab, and choose your highlighting color and edit mode.
+- Browser tab: View and search your bookmarks, or filter to see what you have bookmarked. (Use link under the inbox tab.)
+- The webpage-box: Press CNTRL S (Mac: CMD S)  on any web page and you will see a small box on the top right of the page where you can bookmark and take notes, and also change your highlighting options and edit mode. (see below) Press escape to close the web-page box.
+- Right-Click: When you highlight text, you can right click on it to highlight the text. If you right click on a web page link, you also have a choice to add it to your inbox for later reading.
+- 'Edit Mode': If you turn on edit mode (from the pop-up or webpage-box), then your cursor will turn into a giant highlighter and you can highlight text. When you press on a link in edit mode, you get the option of adding it to you inbox (which means you dont have to go through the right-click menu)
 
-Marks tab
-In the Marks tab, you can search for items you have bookmarked.
-Click on the bookmark icons to filter your results. (eg clicking on inbox turns the icon green and only shows items that have been marked 'inbox'. Clicking it again will turn the button red, and you will only see items that have NOT been marked 'inbox'. You will notice that the 'archive' mark is red by default, so that archived items do not appear in the default search results.
+Highlighting text: You can highlight parts of any web page in different colors. Use the highlight pallette in the pop-up or webpage-box to choose your highlight color. For easier highlighting, turn on edit mode.
 
-History tab
-Search your history. The general search box searches for words used in your tags and notes and highlights, as well as meta data associated with the page.
+Bookmarking: You can add any page to your favorites, inbox or archive using the pop-up or webpage-box. The 'inbox' tab in your pop-up automatically shows all the items marked with inbox, and not marked with archive. From there you can also see all your bookmarks in a browser tab. Also, while the menu is open, pressing cntrl/cmd-I adds to inbox,  cntrl/cmd-A archives, and pressing cntrl/cmd-S again adds it to favorites.
 
-Right Clicking on web pages
-On any web page, you can right click on text you have selected to highlight it, and you can right click on a any link to add it to your inbox.
+Web Page Info: The pop-up shows detailed info on the web pages you visit. You can see the cookies and third party trackers that a site is using, and you can delete all the trackers that vulog has found. (Web pages have many ways of tracking you, so dont think this is a magic bullet.)
 
-Cntrl/Cmd S on web pages
-When you are on any web page, you can press cntrl-S (or cmd-S for mac) and a small menu appears on the top right corner of the web page, to allow you to bookmark it. While the menu is open, pressing cntrl/cmd-I adds to inbox,  cntrl/cmd-A archives, cntrl/cmd-B adds a bookmark, and pressing cntrl/cmd-S again adds a star. You can remove marks by clicking on them with your mouse. The Escape key gets rid of the menu, which disappears automatically after a few seconds in any case.
-
-Data storage
-Your bookmarks and browser history is kept in the chrome's local storage, which has limited space. After some weeks (or months depending on usage), vulog automatically deletes older items.
+Data storage: Your bookmarks and browser history is kept in the chrome's local storage, which has limited space. After some weeks (or months depending on usage), vulog automatically deletes older items.
 
 Privacy and CEPS
-vulog doesn't send any of your data to any outside servers, and you can always delete your data from the "More" tab. If you want to store your data on your own server you will need to set up a Personal Data Store. vulog was built to be able to accept CEPS-compatible data stores. (See here for more details https://www.salmanff.com/ppage/2020-3-15-Why-CEPS-Matters )
-Having your data sit on your personal data store also means that you can publish your bookmarks and highlights and notes. Press the bullhorn button to publish the link from your server.
+vulog doesn't send any of your data to any outside servers, and you can always delete your data from the "Settings" tab. If you want to store your data on your own server you will need to set up a Personal Data Store. vulog was built to be able to accept CEPS-compatible data stores. (See here for more details https://www.salmanff.com/ppage/2020-3-15-Why-CEPS-Matters )
+Having your data sit on your personal data store also means that you can publish your bookmarks and highlights and notes. (More on this in later versions)
 
 Acknowledgements
 Highlighting functionality was largely copied from Jérôme Parent-Lévesque. https://github.com/jeromepl/highlighter

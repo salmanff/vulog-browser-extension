@@ -28,9 +28,10 @@ const history = {
     dg.el('idSearchHistoryBox').textContent = ''
     this.doSearch()
   },
-  doSearch: function (reinit) {
+  doSearch: function (options) {
+    options = options || {}
     const searchTerms = this.removeSpacesEtc(dg.el('idSearchHistoryBox').textContent).toLowerCase()
-    if (searchState.lastWordsSearched !== searchTerms || reinit) this.init_state()
+    if (searchState.lastWordsSearched !== searchTerms || options.reinit) this.init_state()
     searchState.lastWordsSearched = searchTerms
 
     var queryParams = {
@@ -161,10 +162,11 @@ const history = {
       const newdiff = (end && !isNaN(end) && obj.start && !isNaN(obj.start)) ? (end - obj.start) : 0
       return total + newdiff
     })
-    const [ttlCookies, trackerNum] = countTrackers(alog)
+    // const [ttlCookies, trackerNum] = countTrackers(alog)
     const thediv = dg.div({
       style: {
-        'margin-left': '60px',
+        'margin-top': '5px',
+        'margin-left': '3px',
         cursor: 'pointer',
         color: CSS.LIGHT_GREY
       },
@@ -180,10 +182,9 @@ const history = {
       style: { color: (alog._id ? 'green' : 'cornflowerblue') }
     }),
 
-    ((timeSpent ? ('Est. time ' + this.timeSpentify(timeSpent) + ' - ') : '') +
-       (alog.vulog_max_scroll ? 'Scroll:' + Math.round(100 * alog.vulog_max_scroll / alog.vuLog_height) + '% ' : '') +
-       ((ttlCookies || trackerNum) ? ('Left ' + ttlCookies + ' cookies, using ' + trackerNum + ' tracker' + (trackerNum !== 1 ? 's' : '') + ' - ') : '') +
-       'See details'
+    ((timeSpent ? ('Est. time: ' + this.timeSpentify(timeSpent) + (alog.vulog_max_scroll ? ' - ':' ')) : '') +
+       (alog.vulog_max_scroll ? 'Scroll: ' + Math.round(100 * alog.vulog_max_scroll / alog.vuLog_height) + '% ' : '') +
+       ((timeSpent || alog.vulog_max_scroll)? '' : 'Page details')
     )
     )
     return thediv
@@ -192,8 +193,8 @@ const history = {
     const detailsdiv = dg.div({
       style: {
         color: CSS.LIGHT_GREY,
-        'font-size': '10px',
-        'padding-left': '65px',
+        'font-size': '12px',
+        'padding-left': '15px',
         height: '0px',
         overflow: 'hidden',
         transition: 'height 0.3s ease-out'
@@ -226,7 +227,7 @@ const history = {
           })
         }
       },
-      'Remove from history logs ')
+      (alog.vulog_visit_details.length>0? 'Remove from history logs ':''))
     ))
     return detailsdiv
   },
@@ -246,7 +247,7 @@ const history = {
   },
   timeSpentify: function (aTime) {
     //
-    return (Math.floor(aTime / 60000) > 0 ? (Math.floor(aTime / 60000) + 'mins') : '') + (Math.round((aTime % 60000) / 1000, 0)) + 's'
+    return (Math.floor(aTime / 60000) > 0 ? (Math.floor(aTime / 60000) + 'mins ') : '') + (Math.round((aTime % 60000) / 1000, 0)) + 's'
   },
   getdomain: function (aUrl) {
     // 8 represents "h t t p s://" - todo - make algo mroe robust

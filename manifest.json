@@ -2,7 +2,7 @@
   "name": "vulog - logger, bookmarker & highlighter",
   "short_name": "vulog",
   "description": "An app for logging, bookmarking and highlighting the text on the pages you visit on chrome/brave browsers.",
-  "version": "0.0.302",
+  "version": "0.0.401",
   "manifest_version": 2,
   "browser_action": {
     "default_title": "Logging and bookmarking web page views",
@@ -28,6 +28,9 @@
       "scripts": ["freezr/freezr_app_init.js", "freezr/freezr_core.js" ,"freezr/jlos-frozen.js", "scripts/highlight.js" , "scripts/pageData.js",  "scripts/background.js"]
   },
 
-  "icons": { "16": "static/vulog_logo_16.png", "48": "static/vulog_logo_48.png", "128": "static/vulog_logo_128.png" }
+  "icons": { "16": "static/vulog_logo_16.png", "48": "static/vulog_logo_48.png", "128": "static/vulog_logo_128.png" },
 
+  "web_accessible_resources": [
+      "images/*.png"
+  ]
 }

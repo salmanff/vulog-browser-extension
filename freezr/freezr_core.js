@@ -27,7 +27,7 @@ var freezr = {
   app: {
     isWebBased: true,
     loginCallback: null,
-    logoutCallback: null,
+    //logoutCallback: null,
     server: null
   }
 }
@@ -222,7 +222,7 @@ freezr.feps.publicquery = function (options, callback) {
 // Permissions and file permissions
 freezr.perms.getAllAppPermissions = function (callback) {
   // gets a list of permissions granted - this is mainly called on my freezr_core, but can also be accessed by apps
-  var url = '/v1/permissions/groupall/' + freezrMeta.appName
+  var url = '/v1/permissions/getall/' + freezrMeta.appName
   freezerRestricted.connect.read(url, null, callback)
 }
 freezr.perms.isGranted = function (permissionName, callback) {
@@ -489,7 +489,7 @@ freezerRestricted.connect.read = function (url, data, callback, options) {
   freezerRestricted.connect.send(url, null, callback, 'GET', null, options)
 }
 freezerRestricted.connect.send = function (url, postData, callback, method, contentType, options) {
-  // onsole.log('getting send req for url '+url+' options',options)
+  console.log('getting send req for url '+url+' options',options)
   let req = null
   let badBrowser = false
   if (!callback) callback = freezr.utils.testCallBack
@@ -525,7 +525,7 @@ freezerRestricted.connect.send = function (url, postData, callback, method, cont
           error.status = this.status
           if (this.status === 400 || !jsonResponse) error.code = 'noServer'
           if (this.status === 401 && !freezr.app.isWebBased) { freezr.app.offlineCredentialsExpired = true }
-          callback(error)
+          callback(error, {})
         }
       }
     }
@@ -533,7 +533,9 @@ freezerRestricted.connect.send = function (url, postData, callback, method, cont
     req.setRequestHeader('Authorization', 'Bearer ' + (freezr.app.isWebBased ? freezr.utils.getCookie('app_token_' + freezrMeta.userId) : freezrMeta.appToken))
     // req.setRequestHeader ('Authorization','Bearer '+freezr.utils.getCookie('app_token_'+freezrMeta.userId) )
 
-    req.send(postData)
+    console.log(postData)
+
+    req.send(postData || '  ')
   }
 }
 freezerRestricted.connect.authorizedUrl = function (aUrl, method) {
@@ -589,14 +591,16 @@ freezerRestricted.menu.addFreezerDialogueElements = function () {
   elDialogueInner.style['-webkit-transform'] = 'translate3d(' + (Math.max(window.innerWidth, window.innerHeight)) + 'px, -' + (Math.max(window.innerWidth, window.innerHeight)) + 'px, 0)'
 }
 freezerRestricted.menu.close = function (evt) {
-  document.getElementById('freezer_dialogueInner').style['-webkit-transform'] = 'translate3d(' + (Math.max(window.innerWidth, window.innerHeight)) + 'px, -' + (Math.max(window.innerWidth, window.innerHeight)) + 'px, 0)'
-  setTimeout(function () {
-    document.getElementById('freezer_dialogueOuter').style.display = 'none'
-  }, 400)
-  var bodyEl = document.getElementsByTagName('BODY')[0]
-  if (bodyEl) { bodyEl.style.overflow = 'visible' }
-  freezr.onFreezrMenuClose(freezerRestricted.menu.hasChanged)
-  freezerRestricted.menu.hasChanged = false
+  if (document.getElementById('freezer_dialogueInner')){
+    document.getElementById('freezer_dialogueInner').style['-webkit-transform'] = 'translate3d(' + (Math.max(window.innerWidth, window.innerHeight)) + 'px, -' + (Math.max(window.innerWidth, window.innerHeight)) + 'px, 0)'
+    setTimeout(function () {
+      document.getElementById('freezer_dialogueOuter').style.display = 'none'
+    }, 400)
+    var bodyEl = document.getElementsByTagName('BODY')[0]
+    if (bodyEl) { bodyEl.style.overflow = 'visible' }
+    freezr.onFreezrMenuClose(freezerRestricted.menu.hasChanged)
+    freezerRestricted.menu.hasChanged = false
+  }
 }
 freezerRestricted.menu.freezrMenuOpen = function () {
   window.scrollTo(0, 0)

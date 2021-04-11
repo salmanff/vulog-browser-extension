@@ -5,6 +5,7 @@
 */
 body {
   font-family: "Lucida Sans Unicode", "Helvetica Neue", "Arial", sans-serif;
+  margin:0;
 }
 a {
     color: '#0000AB';
@@ -18,19 +19,20 @@ a {
     width:600px;
     max-width:600px;
 }
-#markInTabWindow {
-  padding-left:20px;
-}
 #topBar {
 	margin:0;
 	left:0;
 	right:0px;
-  border-bottom: 2px solid blue;
+  border-bottom: 2px solid yellowgreen;
   font-size: 12px;
   background-color: whitesmoke;
   z-index: 10;
   top:0;
   height: 32px;
+}
+.topBarTabs {
+  position: fixed;
+  top: 0;
 }
 #top_logo{
     width: 45px;
@@ -43,19 +45,13 @@ a {
     margin-right: 20px;
     color:yellowgreen;
 }
-#click_openpopupintab {
-  cursor: pointer;
-  margin-top:15px;
-  margin-bottom: 20px;
-  color:yellowgreen;
-  margin-left: 10px;
-}
+
 .top_menu_item {
     padding-left: 10px;
     padding-right: 10px;
     border-top-left-radius: 5px;
     border-top-right-radius: 5px;
-    border: 1px solid blue;
+    border: 1px solid yellowgreen;
     padding-top: 5px;
     margin-left: 10px;
     margin-right: 5px;
@@ -75,17 +71,8 @@ a {
     border-bottom: 0;
 }
 
-/* ACTION TAB*/
-#thisPage_details {
-    margin-top: 20px;
-    min-height: 20px;
-    margin-left: -15px;
-}
-.vulog_mainlogitem {
-    width: 600px;
-    vertical-align: top;
-    color: grey;
-}
+
+/* TABS */
 .separator {
     width:80%;
     margin-left: 10%;
@@ -96,30 +83,75 @@ a {
     margin-bottom: 5px;
 }
 .tabdiv{
-    padding-left:10px;
     overflow-x:hidden;
     overflow-y:scroll;
-    height:500px;
-    max-height:500px;
+    height:560px;
+    max-height:560px;
+    padding-left: 25px;
+    font-size: 12px;
+    margin-top: 5px;
 }
+#tabstabdiv {
+  padding-top: 50px;
+  overflow-x:hidden;
+  padding-left: 25px;
+  font-size: 12px;
+  margin-top: 5px;
+}
+
+/* CURRENT TAB*/
+#thisPage_details {
+  width: 500px;
+  max-width: 450px;
+  margin:0;
+  padding:0;
+  color: grey;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+#pallette {
+  float:right;
+  font-size : 9px ;
+  font-color : darkgrey ;
+  margin-right : 5px ;
+  width: 70px ;
+  padding: 1px ;
+  padding-left : 3px;
+  border:1px solid lightgrey;
+  border-radius : 3px;
+}
+
 .page_title{
     padding-left: 60px;
     font-weight: bold;
+}
+#currentStars {
+  font-size: 24px;
+  color: grey;
+  height: 0px;
+  overflow: hidden;
+  transition: height 0.3s ease-out;
 }
 
 /* Highlights - quotes*/
 #highlights_area{
   text-align:left;
-  margin-top:0;
+  margin-top:5px;
+  margin-left: 15px;
   margin-bottom:10px;
   padding-bottom:20px;
+  color: darkgrey;
 }
 .quote_outer {
-  width:450px;
+  width:500px;
   margin-bottom:10px;
 }
 .quote_left{
   vertical-align: top;
+}
+.quote_right{
+  min-height:30px;
+  vertical-align: bottom;
 }
 .quote_left:before {
   font-family: FontAwesome;
@@ -136,25 +168,27 @@ a {
   color: yellowgreen;
 }
 .quote_inner {
-  width:380px;
+  width:450px;
   border-radius: 3px;
   display: inline-block;
+  min-height:30px;
   padding:5px;
-  color:white;
-  font-weight:bold;
-  background-color: yellowgreen;
+  color:black;
 }
 .quote_close {
   float:right;
 }
-.quote_close:before {
+.quote_close:after {
   font-family: FontAwesome;
-  content: "\f057";
-  color:indianred;
-  padding-right: 2px;
-  font-size:14px;
-  cursor:pointer;
+  content: "\f05c";
+  margin-left:-18px;
+  font-weight: normal;
+  font-size: 18px;
+  color: palevioletred;
+  vertical-align: top;
+  cursor: pointer;
 }
+
 .quote_display_err {
   color:yellow;
   font-size:11px;
@@ -172,14 +206,47 @@ a {
   border-radius: 2px;
   margin-top: 2px;
   margin-bottom: 10px;
-  width:190px;
+  width:200px;
   text-align: center;
   margin-left:230px;
   border:1px red solid;
   cursor:pointer;
 }
 
+.note_left {
+  vertical-align: top;
+}
+.note_left:before {
+  font-family: FontAwesome;
+  content: "\f249";
+  padding-right: 3px;
+  font-size: 18px;
+  color: darkgrey;
+}
+.note_inner {
+  width:450px;
+  border-radius: 3px;
+  border: 1px solid lightgrey;
+  display: inline-block;
+  min-height:15px;
+  padding:5px;
+  background-color: white;
+  color:yellowgreen;
+  -webkit-user-modify: read-write;
+  text-align: left;
+  cursor: text;
+}
+.note_inner:empty:before {
+    content: attr(data-placeholder);
+    color: lightgrey;
+    font-weight: normal;
+}
+
 /* marks tab and history */
+#vulog_bookmarks_records, #vulog_inbox_records {
+  font-size:18px;
+  color:indianred;
+}
 .text_in_tab {
   margin-left:10px;
   width: 590px;
@@ -196,7 +263,7 @@ a {
 }
 .cookie_details {
   color: rgb(151, 156, 160);
-  font-size: 10px;
+  font-size: 12px;
   padding-bottom: 3px;
   transition: max-height 1s ease-out;
 }
@@ -217,31 +284,73 @@ a {
     font-size: 28px;
 }
 .inputHolder {
-    margin-left: 55px;
-    margin-top:15px;
 }
 .input_explain {
   color:darkgray;
   margin-bottom:4px;
-  font-size: 10px;
+  font-size: 12px;
+}
+#marks_tab {
+  padding-top:10px;
 }
 #idSearchHistoryBox, #idSearchMarksBox {
     overflow: hidden;
     text-overflow: ellipsis;
     margin-top: -3px;
 }
+#idSearchMarksBox {
+  width: 315px;
+}
 .inputBox {
-    border: 1px solid grey  ;
+    border: 1px solid lightgrey  ;
     border-radius: 3px;
-    padding: 2px;
+    padding: 5px;
     margin-right: 3px;
-    width:420px;
+    font-size:14px;
     background-color: white;
     color:yellowgreen;
-    font-weight: bold;
     -webkit-user-modify: read-write;
     display: inline-block;
     text-align: left;
+    cursor: text;
+}
+#idNotesBox {
+  margin-top:5px;
+  min-height:80px;
+  width:490px;
+  margin-left:20px;
+}
+.inputBox:empty:before {
+    content: attr(data-placeholder);
+    color: darkgrey;
+    font-weight: normal;
+}
+.cepsbutton {
+  border: 1px solid lightgrey;
+  border-radius: 3px;
+  color: darkgrey;
+  padding: 1px;
+  text-align: center;
+  cursor: pointer;
+}
+.longcepsButt {
+  border: 1px solid lightgrey;
+  border-radius: 3px;
+  font-size: 9px;
+  color: darkgrey;
+  margin-top: 5px;
+  margin-right: 5px;
+  width: 60px;
+  padding: 2px 0px 4px 0px;
+}
+#searchFilterChoices {
+  margin-top: 10px;
+  color:darkgrey;
+  font-size: 9px;
+}
+#currentMarks {
+  width:100%;
+  text-align: center;
 }
 #click_search_history, #click_search_marks{
     cursor: pointer;
@@ -294,6 +403,11 @@ a {
     padding-left: 70px;
     margin-top: -20px;
 }
+.vulog_title_subtle {
+    font-size: 14px;
+    color: yellowgreen;
+    margin-top: 15px;
+}
 .vulog_title_emph {
     font-weight: bold;
 }
@@ -315,10 +429,49 @@ a {
     display: block;
     padding-top:0;
 }
+#addRemoveStars {
+  margin-top: 5px;
+  color: darkgray;
+}
 .littlestars {
+  min-width: 15px;
+  margin-right: 3px;
+  cursor: pointer;
 }
 .littlestars:before {
-    font-size: 18px;
+    font-size: 15px;
+}
+.redstars:before {
+  color: palevioletred;
+}
+.greenstars:before {
+  color: yellowgreen;
+}
+.bluestars:before {
+  color:skyblue;
+}
+.greystars:before {
+  color: lightgrey;
+}
+.markmiddle:before {
+  vertical-align: middle;
+}
+
+#inbox_toptitle {
+  font-size: 18px;
+  color: indianred;
+}
+#click_openpopupintab, #click_switchGroupByview{
+  cursor: pointer;
+  margin-bottom: 20px;
+  border-radius: 3px;
+  width: fit-content;
+  padding:3px;
+  float:right;
+  margin-right:10px;
+  border: 1px solid lightgrey;
+  border-radius: 3px;
+  color: skyblue
 }
 .user_marks_area {
     margin-right: 105px;
@@ -335,6 +488,7 @@ a {
     text-align: center;
 }
 .hist_details_expanded, .hist_details_collapse {
+  margin-right: 5px;
     font-size: 12px;
     margin-top: -5px;
 }
@@ -404,15 +558,4 @@ a {
     border-bottom: 1px grey solid;
     display: none;
     transition:height 0.3s ease-out;
-}
-#notloggedinmsg {
-  margin:15px;
-  padding:5px;
-  margin-left:60px;
-  margin-right: -20px;
-  border-radius: 3px;
-  border:1px grey dotted;
-  color:blue;
-  text-align: left;
-  display:none;
 }
