@@ -71,7 +71,7 @@ var marks = {
         count: markSearchState.moreItems
       }
     }
-    console.log({queryParams})
+    //onsole.log({queryParams})
     chrome.runtime.sendMessage({ msg: 'searchLocally', list: 'marks', queryParams: queryParams }, function (response) {
       // onsole.log('search repsonse ',response)
       if (!response || !response.success) {

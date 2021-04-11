@@ -160,7 +160,6 @@ JLOS.prototype.sync = function (theList, options) {
     }
     // onsole.log('syncing '+theList,queryOptions)
     freezr.ceps.getquery(queryOptions, function (error, returnJson) {
-      // onsole.log('getting all items after '+new Date(self.data.last_server_sync_time[theList]).toLocaleDateString()+new Date(self.data.last_server_sync_time[theList]).toLocaleTimeString() , returnJson)
       if (error) {
         if (!error.errorCode || returnJson.errorCode !== 'noServer') console.warn('error syncing ', returnJson)
         self.syncing = false
@@ -243,13 +242,12 @@ JLOS.prototype.uploadNewItems = function (theList, options) {
   var self = this
   if (!options) options = {}
   if (!options.warningCallBack) options.warningCallBack = function (msgJson) { console.log('WARNING: ' + JSON.stringify(msgJson)) }
-
   let listItemNumber = -1
   let anItem = null
   let transformedItem = null
   if (this.data[theList] && this.data[theList].length > 0) {
     for (let i = 0; i < this.data[theList].length; i++) {
-      if (this.data[theList][i] && this.data[theList][i].fj_modified_locally && !this.data[theList][i].fj_upload_error) {
+      if (this.data[theList][i] && (this.data[theList][i].fj_modified_locally) && !this.data[theList][i].fj_upload_error) {
         anItem = this.data[theList][i]
         transformedItem = JSON.parse(JSON.stringify(anItem))
         try {

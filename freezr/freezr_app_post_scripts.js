@@ -296,7 +296,7 @@ freezerRestricted.menu.showOfflinePermissions = function (error, outerPermission
 
 freezr.utils.logout = function (logoutCallback) {
   freezerRestricted.connect.ask('/v1/account/applogout', null, function (error, resp) {
-    console.log({error, resp})
+    // console.log({error, resp})
     freezerRestricted.menu.close()
     if (!error || !resp.error || confirm('There was an error logging you out or connecting to the server. Do you want your login credentials removed?')) {
       document.cookie = 'app_token_' + freezrMeta.userId + '= null'

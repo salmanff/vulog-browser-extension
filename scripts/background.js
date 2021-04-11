@@ -557,7 +557,7 @@ requestApi.logged_out = function (request, sender, sendResponse) {
 requestApi.set_edit_mode = function (request, sender, sendResponse) {
   // from webBox
   // request: {set: true/false , purl:}
-  console.log('set_edit_mode ', request.purl, sender.tab, request.tabinfo)
+  // console.log('set_edit_mode ', request.purl, sender.tab, request.tabinfo)
   const tab = ((sender.tab && sender.tab.id) ? sender.tab.id : (request.tabinfo && request.tabinfo.tabid) ? request.tabinfo.tabid : null)
   if (tab && request.purl) {
     if (request.set) {
@@ -577,7 +577,7 @@ const getEditMode = function (tab, purl) {
   if (!tab || !purl || !editModes[tab]) {
     return false
   } else {
-    console.log('purl same : ' + (editModes[tab] && editModes[tab].purl === purl) + ' set? ' + editModes[tab].set)
+    // console.log('purl same : ' + (editModes[tab] && editModes[tab].purl === purl) + ' set? ' + editModes[tab].set)
     return (editModes[tab].purl === purl && editModes[tab].set)
   }
 }
@@ -766,7 +766,7 @@ requestApi.addStarFromOverlay = function (request, sender, sendResponse) {
   const purl = pureUrlify(request.linkUrl)
   var [err, currentMark] = getMarkOrLog(purl)
   if (err) { // ie !currentMark
-    console.log('no currentMark - creating a blank one')
+    // console.log('no currentMark - creating a blank one')
     currentMark = {
       referrer: request.referrer,
       vulog_mark_stars: [request.theStar],
@@ -942,7 +942,7 @@ const addToRecentMarks = function (currentMark) {
   // if (removethis > 0) recentMarks.splice(removethis, 1)
   recentMarks.unshift(currentMark)
   if (recentMarks.length > 10) recentMarks.pop()
-  console.log('addToRecentMarks', recentMarks)
+  // console.log('addToRecentMarks', recentMarks)
 }
 
 requestApi.getMarkFromVulog = function (request, sender, sendResponse) {

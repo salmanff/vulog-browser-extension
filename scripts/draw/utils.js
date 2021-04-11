@@ -30,7 +30,7 @@ function collapseSection (element) {
 }
 
 function expandSection (element) {
-  console.log('expand', element)
+  // console.log('expand', element)
   // from css-tricks.com/using-css-transitions-auto-dimensions/
   var sectionHeight = element.scrollHeight || 'auto'
   element.style.height = (sectionHeight + 'px')

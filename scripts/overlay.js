@@ -292,7 +292,7 @@ const toggleEditMode = function(){
   addEditModeButton();
   setCursorColor();
   chrome.runtime.sendMessage({ msg: 'set_edit_mode', set: (vulogOverlayGlobal.edit_mode), purl: parsedPage.props.purl }, function (response) {
-    console.log(response)
+    //onsole.log(response)
   })
 }
 

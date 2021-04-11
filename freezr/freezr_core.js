@@ -489,7 +489,6 @@ freezerRestricted.connect.read = function (url, data, callback, options) {
   freezerRestricted.connect.send(url, null, callback, 'GET', null, options)
 }
 freezerRestricted.connect.send = function (url, postData, callback, method, contentType, options) {
-  console.log('getting send req for url '+url+' options',options)
   let req = null
   let badBrowser = false
   if (!callback) callback = freezr.utils.testCallBack
@@ -532,8 +531,6 @@ freezerRestricted.connect.send = function (url, postData, callback, method, cont
     if (contentType) req.setRequestHeader('Content-type', contentType)
     req.setRequestHeader('Authorization', 'Bearer ' + (freezr.app.isWebBased ? freezr.utils.getCookie('app_token_' + freezrMeta.userId) : freezrMeta.appToken))
     // req.setRequestHeader ('Authorization','Bearer '+freezr.utils.getCookie('app_token_'+freezrMeta.userId) )
-
-    console.log(postData)
 
     req.send(postData || '  ')
   }

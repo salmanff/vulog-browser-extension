@@ -22,7 +22,7 @@ if (vulogRedirect.query) {
       .then((response) => { return response.json() })
       .then((data) => {
         if (data && data.results && data.results['info.freezr.public'] === 'No records found.') {
-          console.log('No records found.')
+          // console.log('No records found.')
         } else {
           var item = data.results
           item.original_id = item._id

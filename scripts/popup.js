@@ -445,7 +445,6 @@ var drawPallette = function () {
       onclick: function () {
         chrome.tabs.executeScript({ file: 'scripts/toggle_edit_mode.js' })
         chrome.runtime.sendMessage({ msg: 'set_edit_mode', set: (!editMode), purl: tabinfo.purl, tabinfo }, function (response) {
-          console.log(response)
           if (response.success) {
             editMode = !editMode
             setEditModeText()
@@ -482,7 +481,7 @@ const logoutCallback = function (resp) {
   }
   marks.current = null
   freezrMeta.reset()
-  dg.el('vulog_bookmarks_records').innerHTML = ''
+  if (dg.el('vulog_inbox_records')) dg.el('vulog_inbox_records').innerHTML = ''
   if (dg.el('cepsloginAuthUrl')) dg.el('cepsloginAuthUrl').textContent = ''
   opentab('current')
   addSharingOnCurrent()
