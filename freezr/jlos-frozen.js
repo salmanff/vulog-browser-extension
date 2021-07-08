@@ -1,4 +1,4 @@
-/* v2020-06 update
+/* v2021-04 update
 JLOS - Json Local Storage
 JLOS is a simple object for storing data in local storage, without using the filesystem for archiving data.
 JLOS-frozen has additional syncing functionality for freezr
@@ -130,6 +130,7 @@ JLOS.prototype.sync = function (theList, options) {
   /*
   theList is any list which is in the JLos data object - it corresponds to the collection name in freezr
   options are:
+    app_table: Used instead of collection when the app_table is from another app, like dev.ceps.contacts
     gotNewItemsCallBack: function sending two lists - one of all new items added to theList, one with updated items.
     warningCallBack: function sending warning messages in case of errors - warnings are objects with an 'error' describing error and a 'msg', plus 'item' if relevant showing item that had error
     uploadedItemTransform: function that transforms the data in the list before sending it to the server (typically used for encryption) - can also send back null if item should not be synced (eg when waiting for another operation to complete before syncing)
@@ -139,6 +140,7 @@ JLOS.prototype.sync = function (theList, options) {
     doNotCallUploadItems: Boolean. Default is that uploadNewItems is automatically called
     numItemsToFetchOnStart: Number of items to fetch when jlos is started
     permissionName: name of permission under which items are shred
+    xtraQueryParams: additonal params to add to each query - eg for dev.ceps.messages
   */
 
   var self = this
@@ -153,17 +155,23 @@ JLOS.prototype.sync = function (theList, options) {
   } else {
     this.syncing = true
 
-    var queryOptions = { collection: theList, q: {} }
+    var queryOptions = options.app_table ? { app_table: options.app_table, q: {} } : { collection: theList, q: {} }
     // if (options.permissionName) queryOptions.permission_name = options.permissionName
     if (this.data.last_server_sync_time && this.data.last_server_sync_time[theList]) {
       queryOptions.q = { _date_modified: { $gt: this.data.last_server_sync_time[theList] } }
     }
+    if (options && options.xtraQueryParams) {
+      for (const key in options.xtraQueryParams) {
+        queryOptions.q[key] = options.xtraQueryParams[key]
+      }
+    }
     // onsole.log('syncing '+theList,queryOptions)
     freezr.ceps.getquery(queryOptions, function (error, returnJson) {
-      if (error) {
+      if (error || returnJson.error) {
+        if (!error) error = { message: returnJson.message, code: returnJson.code }
         if (!error.errorCode || returnJson.errorCode !== 'noServer') console.warn('error syncing ', returnJson)
         self.syncing = false
-        const message = (error.errorCode && error.errorCode === 'noServer') ? { error: 'no connection', msg: 'Could not connect to server' } : { error: 'server Error', msg: (error.msg || error.message || 'Error syncing.'), code: error.code }
+        const message = (error.errorCode && error.errorCode === 'noServer') ? { error: 'no connection', message: 'Could not connect to server' } : error
         if (options.endCallBack) {
           options.endCallBack(message)
         } else options.warningCallBack(message)
@@ -242,12 +250,13 @@ JLOS.prototype.uploadNewItems = function (theList, options) {
   var self = this
   if (!options) options = {}
   if (!options.warningCallBack) options.warningCallBack = function (msgJson) { console.log('WARNING: ' + JSON.stringify(msgJson)) }
+
   let listItemNumber = -1
   let anItem = null
   let transformedItem = null
   if (this.data[theList] && this.data[theList].length > 0) {
     for (let i = 0; i < this.data[theList].length; i++) {
-      if (this.data[theList][i] && (this.data[theList][i].fj_modified_locally) && !this.data[theList][i].fj_upload_error) {
+      if (this.data[theList][i] && this.data[theList][i].fj_modified_locally && !this.data[theList][i].fj_upload_error) {
         anItem = this.data[theList][i]
         transformedItem = JSON.parse(JSON.stringify(anItem))
         try {
@@ -271,7 +280,7 @@ JLOS.prototype.uploadNewItems = function (theList, options) {
     if (!anItem.fj_deleted) anItem.fj_deleted = false // to add device
     // this.data[theList][listItemNumber].fj_device_modified_on =
     this.save()
-    var uploadOptions = { collection: theList }
+    var uploadOptions = options.app_table ? { app_table: options.app_table } : { collection: theList }
 
     if (anItem._id) {
       uploadOptions.updateRecord = true
@@ -429,7 +438,7 @@ JLOS.prototype.idIndex = function (theList, anItem, searchLocalTempIds) {
   let theIndex = -1
   if (refList && refList.length > 0) {
     for (let i = 0; i < refList.length; i++) {
-      if (refList[i] && refList[i]._id && refList[i]._id === anItem._id) {
+      if (refList[i] && refList[i]._id && anItem && refList[i]._id === anItem._id) {
         theIndex = i
         break
       }

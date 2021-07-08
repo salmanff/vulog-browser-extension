@@ -35,6 +35,7 @@ chrome.storage.local.getBytesInUse(['vulogCopy'], function (bytes) { console.log
 const vulog = new JLOS('vulog', { saver: 'nosave', numItemsToFetchOnStart: 50 })
 // Get locally stored copy of vulog from chrome local storage
 chrome.storage.local.get('vulogCopy', function (items) {
+  // onsole.log('vulogCopy meta is' + JSON.stringify(items.vulogCopy.freezrMeta))
   if (items && items.vulogCopy && !isEmpty(items.vulogCopy)) {
     vulog.data = items.vulogCopy
   } else {
@@ -43,7 +44,8 @@ chrome.storage.local.get('vulogCopy', function (items) {
       deleted_unbackedupdata: false,
       logs: [],
       marks: [],
-      fj_local_id_counter: 1
+      fj_local_id_counter: 1,
+      pause_vulog: true
     }
   }
   vulog.data.hcolor = 'green'
@@ -199,7 +201,7 @@ var trySyncing = function (callFwd) {
         vulog.data.syncErr = null
         syncinprogress = true
         if (vulog) {
-          vulog.sync('logs', { endCallBack: function () { checkMarks(callFwd) }, uploadedItemTransform: addDeviceId })
+          syncContacts(callFwd)
         } else {
           console.warn('vulog not defined')
           callFwd({ error: 'vulog not defined' })
@@ -214,6 +216,23 @@ var addDeviceId = function (anItem) {
   if (!anItem) { console.warn('ERROR - NO ITEM to add deviceId to'); anItem = {} }
   anItem.vulog_deviceId = vulog.data.deviceId
   return anItem
+}
+var syncContacts = function (callFwd) {
+  //onsole.log('syncContacts')
+  vulog.sync('contacts', { app_table: 'dev.ceps.contacts', endCallBack: function (callFwd) { syncMessages(callFwd) } })
+}
+var syncMessages = function (callFwd) {
+  //onsole.log('syncMessages')
+  vulog.sync('messages', {
+    app_table: 'dev.ceps.messages.got',
+    downloadedItemTransform: function (message) {
+      message = JSON.parse(JSON.stringify(message))
+      if (message && message.record && message.record.purl) message.purl = message.record.purl
+      return message
+    },
+    xtraQueryParams: { app_id: 'com.salmanff.vulog' },
+    endCallBack: function (callFwd) { checkMarks(callFwd) }
+  })
 }
 var checkMarks = function (callFwd) { // checks to make sure there are no conflicts
   let itemtocheck = null
@@ -248,56 +267,27 @@ var checkMarks = function (callFwd) { // checks to make sure there are no confli
   }
 }
 var syncMarks = function (callFwd) {
-  // onsole.log('syncing marks')
-  vulog.sync('marks', { handleConflictedItem: handleConflictedItem, endCallBack: function () { managePublishChange(callFwd) } })
+  // onsole.log('syncMarks')
+  vulog.sync('marks', { handleConflictedItem: handleConflictedItem, endCallBack: function () { syncLogs(callFwd) } })
 }
 const handleConflictedItem = function (onlineItem, storedLocalitem) {
   console.warn('handleConflictedItem: Syncing conflict arised in syncing at' + new Date())
   console.warn({ onlineItem, storedLocalitem })
 }
-var managePublishChange = function (callFwd) {
-  // onsole.log("managePublishChange - list now ",vulog.data.publishChange);
-  if (!callFwd) callFwd = function (thing) { /* onsole.log(thing) */ }
-
-  if (vulog.data.publishChange && vulog.data.publishChange.length > 0) {
-    var thePath = vulog.data.publishChange[vulog.data.publishChange.length - 1]
-    const currentMark = vulog.queryLatest('marks', { purl: thePath })
-    var action = null
-    if (!currentMark) {
-      console.warn('Couldnt find user mark in managePublishChange for path ', thePath, ' - mark may have bee removed by user.')
-      vulog.data.publishChange.pop()
-      // console - should send back an error message
-      endofSync()
-      callFwd({ success: true })
-    } else if (!currentMark._id) {
-      console.warn('error  - need to be have synced item to publish')
-      vulog.data.publishChange.pop()
-      // console - should send back an error message
-      endofSync()
-      callFwd({ error: 'error  - need to be have synced item to publish' })
-    } else {
-      action = (currentMark.vulog_mark_stars.indexOf('bullhorn') > -1) ? 'grant' : 'deny'
-      var options = { action: action, shared_with_group: 'public', collection: 'marks' }
-      freezr.perms.setObjectAccess('publish_favorites', currentMark._id, options, function (error, returndata) {
-        // todo console - clean up
-        if (returndata.issues && returndata.issues.length > 0) console.warn('INTERNAL ERROR: ' + returndata.issues)
-        if (error || returndata.err || returndata.error) {
-          console.warn('Error reaching freezr. Will sync later.')
-          endofSync()
-          callFwd({ error: 'Error reaching freezr. Will sync later.' })
-        } else {
-          vulog.data.publishChange.pop()
-          managePublishChange(callFwd)
-        }
-      })
-    }
-  } else {
-    endofSync()
-    callFwd({ success: 'End of Sync after publishchanges' })
-  }
+const syncLogs = function (callFwd) {
+  // onsole.log('syncLogs')
+  vulog.sync('logs', {
+    endCallBack: function (err) {
+      console.warn('end sync logs ', (err ? (' - error: ', err) : ''))
+      endofSync(callFwd)
+    },
+    uploadedItemTransform: addDeviceId
+  })
 }
-var endofSync = function () {
+var endofSync = function (callFwd) {
   syncinprogress = false
+  if (callFwd && typeof callFwd === 'function') callFwd()
+  if (callFwd && callFwd.error) vulog.data.syncErr = (callFwd.message || callFwd.error)
 }
 
 var requestApi = {}
@@ -307,7 +297,7 @@ requestApi.newpage = function (request, sender, sendResponse) {
   let iconpath
   const isPaused = vulog.data.pause_vulog
   if (!subPage) { // is master page
-    console.log('ADDING new page on ', sender.tab.id, request.props)
+    // onsole.log('ADDING new page on ', sender.tab.id, request.props)
     if (request.props.isiframe) console.warn('master page is iframe?')
 
     request.props.tabid = sender.tab.id
@@ -422,36 +412,39 @@ requestApi.searchLocally = function (request, sender, sendResponse) {
 
   while (--currentItem >= 0 && results.length < params.count) {
     aLog = theList[currentItem]
-    if (aLog && !aLog.fj_deleted && aLog.url) {
-      if (params.words && params.words.length > 0) {
-        var gotHit = true
-        for (let j = 0; j < params.words.length; j++) {
-          if (typeof aLog.vulog_kword2 === 'string') {
-            console.warn('aLog stillhas string keyword', aLog) // temp bug fix
-            aLog.vulog_kword2 = aLog.vulog_kword2.split(' ')
+    if (aLog && !aLog.fj_deleted) {
+      const innerLog = request.list === 'messages' ? aLog.record : aLog
+      if (innerLog && innerLog.url) {
+        if (params.words && params.words.length > 0) {
+          var gotHit = true
+          for (let j = 0; j < params.words.length; j++) {
+            if (typeof innerLog.vulog_kword2 === 'string') {
+              console.warn('aLog stillhas string keyword', innerLog) // temp bug fix
+              innerLog.vulog_kword2 = innerLog.vulog_kword2.split(' ')
+            }
+            if (gotHit &&
+                (innerLog.vulog_kword2 &&
+                 innerLog.vulog_kword2.length > 0 &&
+                 innerLog.vulog_kword2.join(' ').toLowerCase().indexOf(params.words[j]) >= 0
+                )
+            ) {
+              // do nothing - onsole.log("got hit for "+params.words[j])
+            } else {
+              gotHit = false
+            }
           }
-          if (gotHit &&
-              (aLog.vulog_kword2 &&
-               aLog.vulog_kword2.length > 0 &&
-               aLog.vulog_kword2.join(' ').toLowerCase().indexOf(params.words[j]) >= 0
-              )
-          ) {
-            // do nothing - onsole.log("got hit for "+params.words[j])
-          } else {
-            gotHit = false
-          }
+        } else if (!params.words || params.words.length === 0) {
+          gotHit = true
         }
-      } else if (!params.words || params.words.length === 0) {
-        gotHit = true
-      }
-      if (gotHit && params.star_filters && !wordsInList1InList2(params.star_filters, aLog.vulog_mark_stars)) gotHit = false
-      if (gotHit && params.exstar_filters && params.exstar_filters.length > 0) {
-        params.exstar_filters.forEach(exstar => {
-          if (aLog.vulog_mark_stars.indexOf(exstar) >= 0) gotHit = false
-        })
-      }
+        if (gotHit && params.star_filters && !wordsInList1InList2(params.star_filters, innerLog.vulog_mark_stars)) gotHit = false
+        if (gotHit && params.exstar_filters && params.exstar_filters.length > 0) {
+          params.exstar_filters.forEach(exstar => {
+            if (innerLog.vulog_mark_stars.indexOf(exstar) >= 0) gotHit = false
+          })
+        }
 
-      if (gotHit && ++foundcounter > params.skip) { results.push(aLog) }
+        if (gotHit && ++foundcounter > params.skip) { results.push(aLog) }
+      }
     }
   }
   // onsole.log({results})
@@ -468,6 +461,17 @@ requestApi.trySyncing = function (request, sender, sendResponse) {
     sendResponse({ success: true })
     trySyncing()
   }
+}
+requestApi.shared = function (request, sender, sendResponse) {
+  if (request.grantee.nickname === '_public') {
+    // onsole.log('neeed to handle public ??? ')
+  } else {
+    const theContact = vulog.queryLatest('contacts', { username: request.grantee.username, serverurl: request.grantee.serverurl })
+    if (theContact) {
+      theContact.used = new Date().getTime()
+    }
+  }
+  requestApi.trySyncing(request, sender, sendResponse)
 }
 
 function wordsInList1InList2 (requiredWords, wordsToCheck) {
@@ -496,6 +500,10 @@ function getMasterPage (tabid, purl) {
 }
 
 // pop up APIs
+requestApi.getFreezrmeta = function (request, sender, sendResponse) {
+  const freezrMeta = vulog.data.freezrMeta
+  sendResponse({ freezrMeta, success: true })
+}
 requestApi.getPageData = function (request, sender, sendResponse) {
   const details = {
     pause_vulog: vulog.data.pause_vulog || false,
@@ -505,12 +513,23 @@ requestApi.getPageData = function (request, sender, sendResponse) {
     num_logs: (vulog.data.logs ? vulog.data.logs.length : 0),
     num_marks: (vulog.data.marks ? vulog.data.marks.length : 0),
 
+    offlineCredentialsExpired: (freezr && freezr.app && freezr.app.offlineCredentialsExpired),
+
     freezrMeta: vulog.data.freezrMeta,
 
     gotBullHornPublicWarning: vulog.data.gotBullHornPublicWarning,
     cookieRemovalHasBeenCalled: vulog.data.cookieRemovalHasBeenCalled
   }
   vulog.data.deleted_unbackedupdata = false
+  const NUM_FRENDS_TO_FETCH = 10
+  details.contacts = (vulog.data.contacts && vulog.data.contacts.length > NUM_FRENDS_TO_FETCH) ? vulog.data.contacts.slice(0, NUM_FRENDS_TO_FETCH) : (vulog.data.contacts.slice(0) || [])
+  details.contacts = details.contacts.sort(function (a, b) {
+    if (a.used && b.used) return a.used > b.used
+    if (a.used) return 1
+    if (b.used) return -1
+    return 0
+  })
+
   if (request.purl) {
     const masterPage = vulog.queryLatest('logs', { purl: request.purl })
     if (request.tabinfo && request.tabinfo.tabid && logDetailsInRAM[request.tabinfo.tabid] && logDetailsInRAM[request.tabinfo.tabid].purl === request.purl) {
@@ -525,21 +544,21 @@ requestApi.getPageData = function (request, sender, sendResponse) {
     if (!details.currentLog) console.warn('no tab info for getpagedata ', request, sender)
     details.current_mark = vulog.queryLatest('marks', { purl: request.purl })
 
-    details.edit_mode = getEditMode(((request.tabinfo && request.tabinfo.tabid)? request.tabinfo.tabid: null), request.purl)
-
-    sendResponse({ details: details, hcolor: vulog.data.hcolor, success: true, fatalErrors })
-  } else {
-    sendResponse({ success: false })
+    details.edit_mode = getEditMode(((request.tabinfo && request.tabinfo.tabid) ? request.tabinfo.tabid : null), request.purl)
   }
+  sendResponse({ details: details, hcolor: vulog.data.hcolor, success: true, fatalErrors })
+  trySyncing()
 }
 
 requestApi.loggedin = function (request, sender, sendResponse) {
   if (request.freezrMeta && request.freezrMeta.appToken) {
     freezrMeta.set(request.freezrMeta)
+    freezr.app.offlineCredentialsExpired = false
     vulog.data.freezrMeta = freezrMeta
-    // console.log('freezrMeta post set', freezrMeta)
+    // onsole.log('freezrMeta post set', vulog.data.freezrMeta)
     saveToChrome(true, null, 'loggedin')
     sendResponse({ success: true })
+    trySyncing()
   } else {
     sendResponse({ success: false })
   }
@@ -547,17 +566,27 @@ requestApi.loggedin = function (request, sender, sendResponse) {
 requestApi.logged_out = function (request, sender, sendResponse) {
   vulog.removeSyncedFreezrInfo('logs')
   vulog.removeSyncedFreezrInfo('marks')
+  vulog.removeSyncedFreezrInfo('contacts')
+  vulog.removeSyncedFreezrInfo('messages')
   vulog.data.offlineMarks = []
+  vulog.data.last_server_sync_time = {}
   freezrMeta.reset()
   vulog.data.freezrMeta = freezrMeta
   saveToChrome(true, null, 'logged_out')
   sendResponse({ success: true })
 }
 
+requestApi.newSharingPerms = function (request, sender, sendResponse) {
+  if (!vulog.data.freezrMeta.perms) vulog.data.freezrMeta.perms = {}
+  vulog.data.freezrMeta.perms.link_share = { granted: request.link_share }
+  vulog.data.freezrMeta.perms.friends = { granted: request.friends }
+  saveToChrome(true, null, 'logged_out')
+  sendResponse({ success: true })
+}
 requestApi.set_edit_mode = function (request, sender, sendResponse) {
   // from webBox
   // request: {set: true/false , purl:}
-  // console.log('set_edit_mode ', request.purl, sender.tab, request.tabinfo)
+  // onsole.log('set_edit_mode ', request.purl, sender.tab, request.tabinfo)
   const tab = ((sender.tab && sender.tab.id) ? sender.tab.id : (request.tabinfo && request.tabinfo.tabid) ? request.tabinfo.tabid : null)
   if (tab && request.purl) {
     if (request.set) {
@@ -577,7 +606,6 @@ const getEditMode = function (tab, purl) {
   if (!tab || !purl || !editModes[tab]) {
     return false
   } else {
-    // console.log('purl same : ' + (editModes[tab] && editModes[tab].purl === purl) + ' set? ' + editModes[tab].set)
     return (editModes[tab].purl === purl && editModes[tab].set)
   }
 }
@@ -751,7 +779,7 @@ requestApi.mark_star = function (request, sender, sendResponse) {
     if (request.tabinfo && request.tabinfo.tabid) { // ie marked from popup
       chrome.browserAction.setIcon({ path: iconpath, tabId: request.tabinfo.tabid }, function () {})
     }
-    saveToChrome(false, null, 'mark_star')
+    saveToChrome(true, null, 'mark_star')
   }
 }
 requestApi.addStarFromOverlay = function (request, sender, sendResponse) {
@@ -766,7 +794,7 @@ requestApi.addStarFromOverlay = function (request, sender, sendResponse) {
   const purl = pureUrlify(request.linkUrl)
   var [err, currentMark] = getMarkOrLog(purl)
   if (err) { // ie !currentMark
-    // console.log('no currentMark - creating a blank one')
+    // onsole.log('no currentMark - creating a blank one')
     currentMark = {
       referrer: request.referrer,
       vulog_mark_stars: [request.theStar],
@@ -791,7 +819,7 @@ requestApi.addStarFromOverlay = function (request, sender, sendResponse) {
       const allMetas = parsedResponse.getElementsByTagName('meta')
       currentMark = addMetaTotags(currentMark, allMetas)
       currentMark = vulog.add('marks', currentMark)
-      saveToChrome(false, null, 'addStarFromOverlay')
+      saveToChrome(true, null, 'addStarFromOverlay')
     }, error => {
       console.error('Got error fetching data for inbox' + error.message)
       currentMark = vulog.add('marks', currentMark)
@@ -838,7 +866,7 @@ requestApi.save_notes = function (request, sender, sendResponse) {
     addToRecentMarks(currentMark)
     const tabId = (request.tabinfo && request.tabinfo.tabid) ? request.tabinfo.tabid : ((sender && sender.tab.id) ? sender.tab.id : null)
     chrome.browserAction.setIcon({ path: iconpath, tabId: tabId }, function () {
-      saveToChrome(false, null, 'save_notes')
+      saveToChrome(true, null, 'save_notes')
     })
   }
 }
@@ -869,13 +897,14 @@ requestApi.newHighlight = function (request, sender, sendResponse) {
     request.highlight.color = vulog.data.hcolor.toString()
     request.highlight.tester = 'recorded test'
     currentMark.vulog_highlights.push(request.highlight)
+    jlosMarkChanged(currentMark)
     addToRecentMarks(currentMark)
     setTimeout(trySyncing, 100)
     sendResponse({ success: true, current_mark: currentMark, color: mapColor(vulog.data.hcolor) })
     const tabId = request.tabinfo ? request.tabinfo.tabid : ((sender.tab && sender.tab.id) ? sender.tab.id : null)
     if (tabId) {
       chrome.browserAction.setIcon({ path: ICON_PATHS.red, tabId: tabId }, function () {
-        saveToChrome(false, null, 'newHighlight')
+        saveToChrome(true, null, 'newHighlight')
       })
     }
   }
@@ -895,7 +924,7 @@ requestApi.copyHighlights = function (request, sender, sendResponse) {
     const tabId = request.tabinfo ? request.tabinfo.tabid : ((sender.tab && sender.tab.id) ? sender.tab.id : null)
     if (tabId) {
       chrome.browserAction.setIcon({ path: ICON_PATHS.red, tabId: tabId }, function () {
-        saveToChrome(false, null, 'copyHighlights')
+        saveToChrome(true, null, 'copyHighlights')
       })
     }
     redirectItem[sender.tab.id] = null
@@ -929,7 +958,7 @@ requestApi.deleteHighlight = function (request, sender, sendResponse) {
     sendResponse({ success, currentMark, error })
     const tabId = (request.tabinfo && request.tabinfo.tabid) ? request.tabinfo.tabid : ((sender && sender.tab && sender.tab.id) ? sender.tab.id : null)
     chrome.browserAction.setIcon({ path: iconpath, tabId: tabId }, function () {
-      saveToChrome(false, null, 'deleteHighlight')
+      saveToChrome(true, null, 'deleteHighlight')
     })
   }
 }
@@ -942,12 +971,12 @@ const addToRecentMarks = function (currentMark) {
   // if (removethis > 0) recentMarks.splice(removethis, 1)
   recentMarks.unshift(currentMark)
   if (recentMarks.length > 10) recentMarks.pop()
-  // console.log('addToRecentMarks', recentMarks)
 }
 
 requestApi.getMarkFromVulog = function (request, sender, sendResponse) {
   // onsole.log("get mark for purl ",request.purl)
   // chrome.runtime.sendMessage({purl:parsedPage.props.purl, highlight:the_highlight, msg:"newHighlight"}
+  request.purl = pureUrlify(request.purl)
   var currentMark = vulog.queryLatest('marks', { purl: request.purl })
   if (currentMark && currentMark.vulog_highlights && currentMark.vulog_highlights.length > 0) {
     currentMark = JSON.parse(JSON.stringify(currentMark))
@@ -961,13 +990,22 @@ requestApi.getMarkFromVulog = function (request, sender, sendResponse) {
       request.purl === redirectItem[sender.tab.id].purl) {
     redirectedmark = redirectItem[sender.tab.id]
   }
+
+  var messages = vulog.queryObjs('messages', { purl: request.purl }, { makeCopy: true })
+  if (messages && messages.length > 0) {
+    for (let j = 0; j < messages.length; j++) {
+      if (messages[j].record.vulog_highlights && messages[j].record.vulog_highlights.length > 0) {
+        messages[j].record.vulog_highlights.forEach((item, i) => {
+          messages[j].record.vulog_highlights[i].color = mapColor(messages[j].record.vulog_highlights[i].color)
+        })
+      }
+    }
+  }
+
   const haveFreezr = (vulog.data.freezrMeta && vulog.data.freezrMeta.serverAddress) ? vulog.data.freezrMeta.serverAddress : null
-  sendResponse({ success: true, mark: currentMark, redirectedmark: redirectedmark, haveFreezr: haveFreezr, hcolor: vulog.data.hcolor.toString() })
+  sendResponse({ success: true, mark: currentMark, redirectedmark, messages, haveFreezr, hcolor: vulog.data.hcolor.toString() })
 }
-requestApi.remove_redirect = function (request, sender, sendResponse) {
-  redirectItem[sender.tab.id] = null
-  sendResponse({ success: true })
-}
+
 requestApi.marksDisplayErrs = function (request, sender, sendResponse) {
   // chrome.runtime.sendMessage({purl:parsedPage.props.purl, msg:"marksDisplayErrs", display_errs:display_errs}
   // onsole.log("get mark for marksDisplayErrs purl ",request)

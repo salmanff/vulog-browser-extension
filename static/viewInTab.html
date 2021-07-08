@@ -9,18 +9,21 @@
 </head>
 <body>
 	<div  id="viewInTabWindow">
-    <div id="warning_outer" class="warning_outer">
-      <div id="click_closeWarnings"></div>
-      <div id="warnings"></div>
-    </div>
 
     <div id="topBar" class="topBarTabs">
         <img id="top_logo" src="/vulog logo v1.png"/>
         <span id="logo_text">vulog</span>
         <span id="click_gototab_bookmarks" class="top_menu_item tm_closed">Bookmarks</span>
+        <span id="click_gototab_messages" class="top_menu_item tm_closed">Messages Received</span>
+        <span id="click_gototab_sentMsgs" class="top_menu_item tm_closed">Messages Sent</span>
         <span style="display:none" id="click_gototab_history" class="top_menu_item tm_closed"> History</span>
         <span style="display:none" id="click_gototab_feed" class="top_menu_item tm_closed">Feed</span>
         <span id="click_gototab_more" class="top_menu_item tm_closed">Settings</span>
+    </div>
+
+    <div id="warning_outer" class="warning_outer warnOnFullPage">
+      <div id="click_closeWarnings"></div>
+      <div id="warnings"></div>
     </div>
 
     <div id="tabstabdiv" >
@@ -68,6 +71,17 @@
       </div>
     </div>
 
+
+    <div id="messages_tab" style="display:none">
+      <div id="vulog_messages_records">
+
+      </div>
+    </div>
+    <div id="sentMsgs_tab" style="display:none">
+      <div id="vulog_sentMsgs_records">
+
+      </div>
+    </div>
 
     <div id="more_tab" style="display:none">
         <br/>
@@ -126,7 +140,7 @@
 
 
 
-
+    <script src="/scripts/manifest.js"></script>
     <script src="/freezr/freezr_app_init.js"></script>
     <script src="/freezr/freezr_core.js"></script>
     <script src="/freezr/freezr_app_post_scripts.js"></script>

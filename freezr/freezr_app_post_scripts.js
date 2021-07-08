@@ -1,13 +1,12 @@
-// info.freezr.public -
+// info.freezr.public - updated 2021
 /*
   This file is used for stand alone apps that do not run on the freezr server.
-  for electron - script file to be included after freezr_app_init.js and app_config.js .
+  for electron - script file to be included after freezr_app_init.js and manifest.js .
 */
 /* global freezr, freezerRestricted, freezrMeta, alert, confirm */
 
 freezr.app.isWebBased = false
 document.addEventListener('DOMContentLoaded', function () {
-  //freezr.utils.addFreezerDialogueElements()
   if (freezr.initPageScripts) freezr.initPageScripts()
 })
 
@@ -63,7 +62,7 @@ freezerRestricted.menu.add_standAloneApp_login_dialogue = function (divToInsertI
       if (freezrMeta.serverAddress.slice(freezrMeta.serverAddress.length - 1) === '/') freezrMeta.serverAddress = freezrMeta.serverAddress.slice(0, freezrMeta.serverAddress.length - 1)
 
       const messageDiv = document.getElementById('freezr_login_message')
-      messageDiv.innerHTML = '<br/><div align="center">.<img src="../freezr/static/ajaxloaderBig.gif"/></div>'
+      messageDiv.innerHTML = '<br/><div align="center">.<img src="freezr/static/ajaxloaderBig.gif"/></div>'
       freezr.utils.ping(null, function (error, resp) {
         if (!resp || error) {
           console.warn(error)
@@ -101,7 +100,7 @@ freezerRestricted.menu.add_standAloneApp_login_dialogue = function (divToInsertI
       if (!freezrMeta.appName) {
         alert('developer error: variable freezrMeta.appName needs to be defined')
       } else {
-        messageDiv.innerHTML = '<br/><div align="center">.<img src="../freezr/static/ajaxloaderBig.gif"/></div>'
+        messageDiv.innerHTML = '<br/><div align="center">.<img src="freezr/static/ajaxloaderBig.gif"/></div>'
         freezerRestricted.connect.ask('/oauth/token', theInfo, function (error, resp) {
           resp = freezr.utils.parse(resp)
           if (error || (resp && resp.error)) {
@@ -301,7 +300,11 @@ freezr.utils.logout = function (logoutCallback) {
     if (!error || !resp.error || confirm('There was an error logging you out or connecting to the server. Do you want your login credentials removed?')) {
       document.cookie = 'app_token_' + freezrMeta.userId + '= null'
       freezrMeta.reset()
-      if (logoutCallback) logoutCallback(resp)
+      if (logoutCallback) {
+        logoutCallback(resp)
+      } else if (freezr.app.logoutCallback) {
+        freezr.app.logoutCallback(resp)
+      }
     }
   })
 }

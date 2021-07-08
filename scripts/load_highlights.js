@@ -1,11 +1,14 @@
 // Highligher FUNCTIONS from github.com/jeromepl/highlighter
 
-/* global parsedPage, chrome, vulogOverlayGlobal, showVulogOverlay, highlightFromSelection, HIGHLIGHT_CLASS */
+/* global parsedPage, chrome, vulogOverlayGlobal, vulogutils,  showVulogOverlay, highlightFromSelection, HIGHLIGHT_CLASS */
 
 const initiateHighlights = function () {
   if (!parsedPage.props.isiframe) {
+    const overlayOuter = vulogutils.makeEl('div', 'vulog_overlay_outer', null, '')
+    overlayOuter.style.display = 'none'
+    document.body.appendChild(overlayOuter)
+
     chrome.runtime.sendMessage({ purl: parsedPage.props.purl, msg: 'getMarkFromVulog' }, function (response) {
-      // onsole.log(response)
       let showthis = null
       if (!response || response.error) {
         console.warn(response ? response.error : 'No response from vulog extension - internal error?')
@@ -18,40 +21,72 @@ const initiateHighlights = function () {
           vulogOverlayGlobal.redirect_mark = response.redirectedmark
           showthis = 'redirect_mark'
         }
+        if (response.messages && response.messages.length > 0) {
+          vulogOverlayGlobal.messages = response.messages
+          showthis = showthis || 'messages_0'
+        }
+        // https://www.w3resource.com/javascript-exercises/fundamental/javascript-fundamental-exercise-171.php
+        const parseCookie = str =>
+          str
+            .split(';')
+            .map(v => v.split('='))
+            .reduce((acc, v) => {
+              if (v && v[0] && v[1]) acc[decodeURIComponent(v[0].trim())] = decodeURIComponent(v[1].trim())
+              return acc
+            }, {})
+        const cookies = parseCookie(document.cookie)
+        if (cookies.vulog_show) {
+          showthis = cookies.vulog_show
+          if (showthis === 'none') showthis = 'none'
+          if (showthis === 'none') vulogOverlayGlobal.shown_highlight = 'none'
+          if (showthis === 'self' && vulogOverlayGlobal.self_mark) showthis = 'self_mark'
+          if (showthis === 'redirect' && vulogOverlayGlobal.redirect_mark) showthis = 'redirect_mark'
+        }
       }
+      if (showthis) document.cookie = 'vulog_show=' + showthis + '; expires= ' + (new Date(new Date().getTime() + 1000)).toUTCString()
       const displayErrs = showHighlights(showthis)
-      if (displayErrs.length > 0) {
+      var errCount = 0
+      for (const anErr in displayErrs) { if (anErr && anErr.err) errCount++ }
+      if (errCount > 0) {
         if (showthis === 'self_mark') {
           chrome.runtime.sendMessage({ purl: parsedPage.props.purl, msg: 'marksDisplayErrs', display_errs: displayErrs }, function (response) {
             // onsole.log(response)
           })
-        } else {
-          console.warn(displayErrs)
         }
+        showVulogOverlay('Some errors occured in displaying highlights. ' + errCount + (errCount === 1 ? ' highlight was not shown.' : ' highlights were not shown.'))
+      } else if (response.redirectedmark || (response.messages && response.messages.length > 0)) {
+        showVulogOverlay()
       }
-      if (response.redirectedmark) showVulogOverlay()
     })
   }
 }
 const showHighlights = function (showthis) {
   var displayErrs = []
   // let color = 'yellowgreen'
-  if (showthis) {
-    //if (showthis === 'redirect_mark') color = 'yellow'
-    if (vulogOverlayGlobal[showthis].vulog_highlights && vulogOverlayGlobal[showthis].vulog_highlights.length > 0) {
-      const highlights = JSON.parse(JSON.stringify(vulogOverlayGlobal[showthis].vulog_highlights))
+  let toshow = null
+  if (showthis && showthis !== 'none') {
+    if (showthis.split('_')[0] === 'messages') {
+      toshow = vulogOverlayGlobal.messages[parseInt(showthis.split('_')[1])]
+      toshow = toshow && toshow.record ? toshow.record : null
+    } else {
+      toshow = vulogOverlayGlobal[showthis]
+    }
+    // if (showthis === 'redirect_mark') color = 'yellow'
+    if (toshow && toshow.vulog_highlights && toshow.vulog_highlights.length > 0) {
+      const highlights = JSON.parse(JSON.stringify(toshow.vulog_highlights))
       highlights.forEach((aHighlight, idx) => {
         if (!loadHighlights(aHighlight)) displayErrs.push({ err: true, idx: idx })
         else if (aHighlight.display_err) displayErrs.push({ err: false, idx: idx })
       })
       vulogOverlayGlobal.shown_highlight = showthis
+      vulogOverlayGlobal.shown_highlight_details = toshow.vulog_highlights
     }
   }
   return displayErrs
 }
 
 function loadHighlights (highlightVal) {
-  //console.log('loadHighlights',highlightVal)
+  // console.log('loadHighlights',highlightVal)
   var selection = {
     anchorNode: elementFromQuery(highlightVal.anchorNode, 'anchor', highlightVal.string),
     anchorOffset: highlightVal.anchorOffset,
@@ -74,7 +109,7 @@ function loadHighlights (highlightVal) {
   }
 }
 function elementFromQuery (storedQuery, eltype, thestring) {
-  //console.log('elementFromQuery',{thestring})
+  // console.log('elementFromQuery',{thestring})
   let lastNode
   var aquery = storedQuery[0]
   if (!storedQuery || storedQuery.length === 0) console.warn('NO Query sent')

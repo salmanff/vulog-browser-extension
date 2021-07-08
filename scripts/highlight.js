@@ -1,7 +1,7 @@
 // Highligher FUNCTIONS from github.com/jeromepl/highlighter
 // Pick a combination of characters that should (almost) never occur
 
-/* global Node */
+/* global Node, vulogOverlayGlobal */
 
 /* exported setHighlightsToColor, highlightFromSelection */
 
@@ -41,55 +41,61 @@ function resetVars () {
 }
 
 const highlightFromSelection = function (selString, container, selection, color) {
-  resetVars()
+  if (!vulogOverlayGlobal.shown_highlight || vulogOverlayGlobal.shown_highlight === 'self' || vulogOverlayGlobal.shown_highlight === 'self_mark') {
+    // todo - why should 'self' be in above - self_mark shoudl suffice - todo clean logic
+    resetVars()
 
-  selectionString = selString
-  selectionLength = selectionString.length
+    selectionString = selString
+    selectionLength = selectionString.length
 
-  anchor = selection.anchorNode
-  anchorOffset = selection.anchorOffset
-  focus = selection.focusNode
-  focusOffset = selection.focusOffset
+    anchor = selection.anchorNode
+    anchorOffset = selection.anchorOffset
+    focus = selection.focusNode
+    focusOffset = selection.focusOffset
 
-  /**
-  * STEPS:
-  * 1 - Use the offset of the anchor/focus to find the start of the selected text in the anchor/focus element
-  *     - Use the first of the anchor of the focus elements to appear
-  * 2 - From there, go through the elements and find all Text Nodes until the selected text is all found.
-  *     - Wrap all the text nodes (or parts of them) in special characters
-  * 3 - Replace the special characters by span tags with a yellow background color in the container html
-  * 4 - Deselect text
-  */
+    /**
+    * STEPS:
+    * 1 - Use the offset of the anchor/focus to find the start of the selected text in the anchor/focus element
+    *     - Use the first of the anchor of the focus elements to appear
+    * 2 - From there, go through the elements and find all Text Nodes until the selected text is all found.
+    *     - Wrap all the text nodes (or parts of them) in special characters
+    * 3 - Replace the special characters by span tags with a yellow background color in the container html
+    * 4 - Deselect text
+    */
 
-  // Step 1 + 2:
-  recursiveWrapper(container)
-  color = color || 'yellowgreen'
-  var replacements = getReplacements(color)
+    // Step 1 + 2:
+    recursiveWrapper(container)
+    color = color || 'yellowgreen'
+    var replacements = getReplacements(color)
 
-  // Step 3:
-  // Either highlight, or un-highlight the selection
+    // Step 3:
+    // Either highlight, or un-highlight the selection
 
-  // Need to take the parent in order to be able to open and close the container's root element (a <span> in the un-highlight case)
-  // Also needed for the negative lookahead of the highlight case
+    // Need to take the parent in order to be able to open and close the container's root element (a <span> in the un-highlight case)
+    // Also needed for the negative lookahead of the highlight case
 
-  var parent = container.parentNode
-  var content = parent.innerHTML
+    var parent = container.parentNode
+    var content = parent.innerHTML
 
-  var startRe, endRe, sanitizeRe
+    var startRe, endRe, sanitizeRe
 
-  // sf removed alreadyHighlighted comncept as vulog has manual remove
-  startRe = new RegExp(escapeRegex(DELIMITERS.start), 'g')
-  endRe = new RegExp(escapeRegex(DELIMITERS.end), 'g')
-  content = content.replace(startRe, replacements.start).replace(endRe, replacements.end)
+    // sf removed alreadyHighlighted comncept as vulog has manual remove
+    startRe = new RegExp(escapeRegex(DELIMITERS.start), 'g')
+    endRe = new RegExp(escapeRegex(DELIMITERS.end), 'g')
+    content = content.replace(startRe, replacements.start).replace(endRe, replacements.end)
 
-  // Make sure to not highlight the same thing twice, as it breaks the un-highlighting
-  sanitizeRe = new RegExp(escapeRegex(replacements.start + replacements.start) + '(.*?)' + escapeRegex(replacements.end + replacements.end), 'g')
-  parent.innerHTML = content.replace(sanitizeRe, replacements.start + '$1' + replacements.end)
+    // Make sure to not highlight the same thing twice, as it breaks the un-highlighting
+    sanitizeRe = new RegExp(escapeRegex(replacements.start + replacements.start) + '(.*?)' + escapeRegex(replacements.end + replacements.end), 'g')
+    parent.innerHTML = content.replace(sanitizeRe, replacements.start + '$1' + replacements.end)
 
-  // Step 4:
-  if (selection.removeAllRanges) selection.removeAllRanges()
+    // Step 4:
+    if (selection.removeAllRanges) selection.removeAllRanges()
 
-  return true // No errors. 'undefined' is returned by default if any error occurs during this method's execution, like if 'content.replace' fails by 'content' being 'undefined'
+    return true // No errors. 'undefined' is returned by default if any error occurs during this method's execution, like if 'content.replace' fails by 'content' being 'undefined'
+  } else {
+    showVulogOverlay('Press on the "show Your Own Highlights" button to be able tadd new highlights')
+    return false
+  }
 }
 
 function recursiveWrapper (container) {

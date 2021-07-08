@@ -43,9 +43,25 @@
   cursor: pointer;
   border-radius:3px;
   border:1px solid yellowgreen;
-  background-color: lightgrey;
+  background-color: whitesmoke;
   margin:5px;
   margin-bottom: 20px;
+  padding:3px;
+  line-height: normal;
+  overflow: hidden;
+  font-weight: normal;
+}
+.normheight {
+  line-height: normal;
+}
+.boldtext {
+  font-weight: bold;
+}
+#vulog_overlay_errMsg {
+  font-family: "Lucida Sans Unicode", "Helvetica Neue", "Arial", sans-serif;
+  font-size:14px;
+  color:indianred;
+  text-emphasis: bold;
 }
 
 #vulog_overlay_star_ch {

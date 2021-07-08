@@ -227,7 +227,7 @@ const history = {
           })
         }
       },
-      (alog.vulog_visit_details.length>0? 'Remove from history logs ':''))
+      (alog.vulog_visit_details.length > 0 ? 'Remove from history logs ' : ''))
     ))
     return detailsdiv
   },

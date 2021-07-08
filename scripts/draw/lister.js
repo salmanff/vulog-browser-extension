@@ -35,10 +35,10 @@ var lister = {
     date: function (results, options) {
       const dateDivs = {}
       results.forEach(alog => {
-        const thisdate = new Date(alog.vulog_timestamp).toDateString()
+        const thisdate = new Date(['messages','sentMsgs'].includes(options.tabtype) ? alog._date_modified : alog.vulog_timestamp).toDateString()
         if (!dateDivs[thisdate]) {
           dateDivs[thisdate] = dg.div(
-            { style: { 'font-size': '18px', color: 'indianred', 'margin-top': '40px' } },
+            { style: { 'font-size': '18px', color: 'indianred', 'margin-top': (['messages','sentMsgs'].includes(options.tabtype) ? '20px' : '40px') } },
             (thisdate)
           )
         }
@@ -91,6 +91,22 @@ var lister = {
     // options source, tabtype, leaveOpen
     // favicon and title
     const that = this
+
+    if (['messages', 'sentMsgs'].includes(options.tabtype)) {
+      itemdiv.appendChild(dg.div({
+        // style: { 'padding-left': '0px' }
+      }, dg.div({
+        style: {
+          // 'margin-left': '0px',
+          'font-size': '12px'
+        }
+      },
+      alog.sender_id + ' @ ' + alog.sender_host + ':')))
+      itemdiv = itemdiv.firstChild
+      alog.record._date_created = alog._date_created
+      alog.record._date_modified = alog._date_modified
+      alog = alog.record
+    }
 
     itemdiv.appendChild(dg.span(
       // favicon
@@ -167,6 +183,12 @@ var lister = {
 
     itemdiv.appendChild(toptag)
 
+    const bookmarkchoices = function () { // part of detailsdiv-
+      if (['messages', 'sentMsgs'].includes(options.tabtype)) return dg.span()
+      return dg.div({
+        style: { 'margin-top': '10px', 'margin-bottom': '10px', 'margin-left': '19px', padding: '2px', color: 'darkgray', 'font-size': '12px' }
+      }, lister.addBookmarkChoices(alog, topstarspan, options.source))
+    }
     const detailsdiv = dg.div({
       style: {
         'padding-left': '45px',
@@ -179,17 +201,15 @@ var lister = {
     },
     dg.div({ style: { 'margin-top': '3px', color: 'darkgray', 'font-size': '11px' } },
       dg.div({ style: { 'margin-bottom': '3px', color: 'darkgray' } },
-        'Created: ' + (new Date(alog.vulog_timestamp).toLocaleDateString() + ' ' + new Date(alog.vulog_timestamp).toLocaleTimeString() + ' (Modified: ' + (new Date(alog._date_modified || alog.fj_modified_locally).toLocaleDateString()) + ')')),
+        'Created: ' + (new Date(alog.vulog_timestamp || alog._date_created).toLocaleDateString() + ' ' + (alog.vulog_timestamp ? (' (Modified: ' + (new Date(alog._date_modified || alog.fj_modified_locally).toLocaleDateString()) + ')') : ''))),
       dg.div({ style: { 'margin-bottom': '3px', color: 'darkgray' } },
         dg.a({ href: alog.purl, target: '_blank' }, 'full url:' + alog.purl)),
       dg.div({ style: { 'margin-bottom': '3px', color: 'darkgray', display: (alog.referrer ? 'block' : 'none') } },
         dg.a({ href: alog.referrer, target: '_blank' },
           'referred by: ' + alog.referrer))
     ),
-    dg.div({
-      style: { 'margin-top': '10px', 'margin-bottom': '10px', 'margin-left': '19px', padding: '2px', color: 'darkgray', 'font-size': '12px' }
-    }, lister.addBookmarkChoices(alog, topstarspan, options.source)),
-    lister.drawNote(alog)
+    bookmarkchoices(),
+    lister.drawNote(alog, options)
     )
 
     if (alog.vulog_highlights && alog.vulog_highlights.length > 0) {
@@ -322,6 +342,7 @@ var lister = {
   // drawNote in list
   drawNote: function (aMark, options) {
     if (!aMark.vulog_mark_notes) aMark.vulog_mark_notes = ''
+    if (['messages','sentMsgs'].includes(options.tabtype) && !aMark.vulog_mark_notes) return dg.span()
     return dg.div({ className: 'quote_outer' },
       dg.span({ className: 'note_left' }),
       dg.span({
@@ -425,6 +446,30 @@ var lister = {
     meta: {}
   },
 
+  messages: {
+    searchParams: {
+      words: [],
+      star_filters: [],
+      exstar_filters: [],
+      count: SEARCH_COUNT
+    },
+    pages: [],
+    groupBy: 'date',
+    meta: {}
+  },
+
+  sentMsgs: {
+    searchParams: {
+      words: [],
+      star_filters: [],
+      exstar_filters: [],
+      count: SEARCH_COUNT
+    },
+    pages: [],
+    groupBy: 'date',
+    meta: {}
+  },
+
   showSearch: function (page, tabName) {
     window.scrollTo(0, 0)
     if (dg.el('inbox_toptitle')) dg.el('inbox_toptitle').scrollIntoView()
@@ -463,11 +508,16 @@ var lister = {
     var queryParams = lister[tabName].searchParams
     queryParams.skip = lister[tabName].pages.length * SEARCH_COUNT
 
-    if (tabName !== 'inbox') lister.addToPopState(tabName, fromPopState)
+    // if (tabName !== 'inbox') lister.addToPopState(tabName, fromPopState)
+    if (history.pushState && typeof history.pushState === 'object') lister.addToPopState(tabName, fromPopState)
 
-    chrome.runtime.sendMessage({ msg: 'searchLocally', list: 'marks', queryParams }, function (response) {
+    const list = (['messages', 'sentMsgs'].includes(tabName)) ? tabName : 'marks'
+
+    const searchCallback = function (response) {
+      //onsole.log('searchCallback', response)
       const mainDiv = dg.el('vulog_' + tabName + '_records', { clear: true })
       if (!response || !response.success) {
+        console.warn('Something went wrong. Sorry. Please do try again.', response)
         mainDiv.innerText = 'Something went wrong. Sorry. Please do try again.'
       } else if (response.results.length === 0) {
         dg.hideEl('click_switchGroupByview') // console.log - todo- need to draw this not hardocde it
@@ -475,16 +525,31 @@ var lister = {
           mainDiv.innerText = '\n\nYour inbox is empty. \n\n Add items to your inbox from the Current tab, or when you are on a web page, rightclick any link and add it to your inbox. '
         } else {
           mainDiv.appendChild(dg.div({ id: 'searchFilterChoices' }))
-          lister.redrawSearchFilters(tabName, 'searchFilterChoices')
+          if (!['messages', 'sentMsgs'].includes(tabName)) lister.redrawSearchFilters(tabName, 'searchFilterChoices')
           mainDiv.appendChild(dg.div({ style: { 'margin-top': '20px' } },
-            (page === 0 ? 'No bookmarks found' : 'No more bookmarks found')
+            (tabName === 'messages'
+              ? (page === 0 ? 'No messages have been shared with you' : 'No more messages found')
+              : (tabName === 'sentMsgs' ? (page === 0 ? 'You have not sent any messages yet' : 'No more messages found')
+                : (page === 0 ? 'You have not bookmarked anything yet' : 'No more bookmarks found'))
+            )
           ))
         }
       } else if (response.results.length > 0) {
         lister[tabName].pages[page] = { results: response.results }
         lister.showSearch(page, tabName)
       }
-    })
+    }
+
+    if (list === 'sentMsgs') {
+      var params = { app_table: 'dev.ceps.messages.sent', count: SEARCH_COUNT, appToken: freezrMeta.appToken, q: { app_id: 'com.salmanff.vulog' } }
+      if (queryParams.skip) params.skip = queryparams.skip
+      // console.log - need to add more sophisticated earch here for msgs and others
+      freezr.feps.postquery(params, (error, response) => {
+        searchCallback({results: response, success: (!error), error})
+      })
+    } else {
+      chrome.runtime.sendMessage({ msg: 'searchLocally', list, queryParams }, searchCallback)
+    }
   },
 
   addToPopState: function (tabName, fromPopState) {

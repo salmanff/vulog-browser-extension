@@ -7,26 +7,7 @@
   This is done in the html page script for server apps.
   For offline apps, a file like this must be used.
 */
-
-/*
-// Below used for electron (Needs to be checked)
-var exports = exports || null;
-var freezrMeta={}
-var freezrMeta.appName = (exports && exports.structure && exports.structure.meta && exports.structure.meta.app_name)? exports.structure.meta.app_name: "";
-var freezrMeta.appversion = (exports && exports.structure && exports.structure.meta && exports.structure.meta.app_version)? exports.structure.meta.app_version: "N/A";
-var freezrMeta.appDisplayName = (exports && exports.structure && exports.structure.meta && exports.structure.meta.app_display_name)? exports.structure.meta.app_display_name: freezrMeta.appName;
-
-// Electron specific:
-// window.nodeRequire = require;
-delete window.require
-delete window.exports
-delete window.module
-
-// all apps..
-var exports = { structure: null}
-
-*/
-
+/* global manifest */
 /* exported freezrMeta */
 
 // For offline apps:
@@ -58,5 +39,21 @@ FREEZR_META.prototype.set = function (props) {
   }
 }
 
-var freezrMeta = new FREEZR_META()
-freezrMeta.initialize() // eslint hack
+var freezrMeta
+if (manifest) { // for offline apps, where manifest is defined
+  // Below used for electron
+  var appName = (manifest.structure && manifest.structure.identifier) ? manifest.structure.identifier : ''
+  var appVersion = (manifest.structure && manifest.structure.version) ? manifest.structure.version : ''
+  var appDisplayName = (manifest.structure && manifest.structure.display_name) ? manifest.structure.display_name : ''
+
+  freezrMeta = new FREEZR_META(appName, appVersion, appDisplayName)
+
+  // Electron specific (ie if manifest exists, )
+  // window.nodeRequire = require;
+  delete window.require
+  delete window.manifest // or window.appConfig?
+  delete window.module
+} else {
+  freezrMeta = new FREEZR_META()
+  freezrMeta.initialize() // eslint hack
+}

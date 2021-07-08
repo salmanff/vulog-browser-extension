@@ -1,19 +1,25 @@
 // overlay.js - part of vulog
 
-/* global chrome, parsedPage, setHighlightsToColor */
-
+/* global chrome, parsedPage */
+/*
+setTimeout(function () {
+  console.log('vulogOverlayGlobal ' + JSON.stringify(vulogOverlayGlobal))
+  console.log({ vulogOverlayGlobal })
+}, 2000)
+*/
 const vulogOverlayGlobal = {
   self_mark: null,
   redirect_mark: null,
-  others_marks: null,
+  messages: null,
   shown_highlight: null,
+  shown_highlight_details: null,
   edit_mode: false,
   currentHColor: 'green',
 
   is_open: false,
   close: function () {
     vulogOverlayGlobal.is_open = false
-    if (document.getElementById('vulog_overlay_outer')) document.getElementById('vulog_overlay_outer').remove()
+    if (document.getElementById('vulog_overlay_outer')) document.getElementById('vulog_overlay_outer').style.display = 'none'
   },
   timer: null,
   extend_timer: function () {
@@ -42,11 +48,11 @@ const vulogOverlayGlobal = {
   copy_highs: function () {
     vulogOverlayGlobal.extend_timer()
     if (!vulogOverlayGlobal.self_mark.vulog_highlights)vulogOverlayGlobal.self_mark.vulog_highlights = []
-    vulogOverlayGlobal.redirect_mark.vulog_highlights.forEach(ahigh => vulogOverlayGlobal.self_mark.vulog_highlights.push(ahigh))
+    vulogOverlayGlobal.shown_highlight_details.forEach(ahigh => vulogOverlayGlobal.self_mark.vulog_highlights.push(ahigh))
     chrome.runtime.sendMessage({ purl: parsedPage.props.purl, highlights: vulogOverlayGlobal.redirect_mark.vulog_highlights, msg: 'copyHighlights' },
       function (resp) {
         if (resp.error) console.warn('Error sending info to background ', parsedPage)
-        else window.location.reload(false)
+        else vulogutils.setCookieAndReload('self')
       }
     )
   }
@@ -59,10 +65,14 @@ const vulogutils = {
     if (className) el.className = className
     if (text) el.innerText = text
     return el
+  },
+  setCookieAndReload: function (type) {
+    document.cookie = 'vulog_show=' + type + '; expires= ' + (new Date(new Date().getTime() + 15000)).toUTCString()
+    window.location.reload()
   }
 }
 
-const showVulogOverlay = function () {
+const showVulogOverlay = function (errMsg) {
   vulogOverlayGlobal.extend_timer()
   vulogOverlayGlobal.is_open = true
   // {purl:parsedPage.props.purl, msg:"getMarkFromVulog"}
@@ -70,26 +80,26 @@ const showVulogOverlay = function () {
     vulogOverlayGlobal.currentHColor = response.hcolor || 'green'
     if (response.mark) {
       vulogOverlayGlobal.self_mark = response.mark
-      nowShowMarks()
+      nowShowMarks(errMsg)
     } else if (!response.haveFreezr) {
       vulogOverlayGlobal.self_mark = { purl: parsedPage.props.purl }
-      nowShowMarks()
+      nowShowMarks(errMsg)
     } else {
       vulogOverlayGlobal.self_mark = { purl: parsedPage.props.purl }
-      nowShowMarks()
+      nowShowMarks(errMsg)
       chrome.runtime.sendMessage({ msg: 'getMarkOnlineInBg', purl: parsedPage.props.purl, tabinfo: null }, function (response) {})
       setTimeout(function () {
         chrome.runtime.sendMessage({ msg: 'getMarkFromVulog', purl: parsedPage.props.purl, tabinfo: null }, function (response) {
           if (response && response.mark) {
             vulogOverlayGlobal.self_mark = response.mark
-            nowShowMarks()
+            nowShowMarks(errMsg)
           }
         })
       }, 2000) // time for server to respond
     }
   })
 
-  function nowShowMarks () {
+  function nowShowMarks (errMsg) {
     const vulogToggleOverlay = function (e) {
       var parts = e.target.id.split('_')
       const theStar = parts[2]
@@ -97,8 +107,22 @@ const showVulogOverlay = function () {
       vulogOverlayGlobal.toggleMark(theStar, starWasChosen)
     }
 
-    // Add overloay
-    var overlay = vulogutils.makeEl('div', 'vulog_overlay_outer', null, 'vulog bookmarks')
+    // Add overlay
+    var overlay
+    if (document.getElementById('vulog_overlay_outer')) {
+      overlay = document.getElementById('vulog_overlay_outer')
+      overlay.innerHTML = ''
+    } else {
+      overlay = vulogutils.makeEl('div', 'vulog_overlay_outer', null, '')
+    }
+    overlay.style.display = 'block'
+
+    if (errMsg) {
+      var errDiv = vulogutils.makeEl('div', 'vulog_overlay_errMsg', null, errMsg)
+      overlay.appendChild(errDiv)
+    }
+
+    overlay.appendChild(vulogutils.makeEl('div', null, null, 'vulog bookmarks'))
 
     let adiv = null
     var aspan = vulogutils.makeEl('span', 'vulog_overlay_cross_ch')
@@ -108,28 +132,13 @@ const showVulogOverlay = function () {
     var stars = vulogOverlayGlobal.self_mark.vulog_mark_stars || []
     const MAIN_STARS = ['star', 'inbox', 'archive']
     var stardiv = document.createElement('div')
-    stardiv.style['text-align']='center'
+    stardiv.style['text-align'] = 'center'
     MAIN_STARS.forEach(aStar => {
       var adiv = vulogutils.makeEl('div', ('vulog_overlay_' + aStar + (stars.includes(aStar) ? '_ch' : '_nc')), 'vulog_overlay_stars')
       adiv.onclick = vulogToggleOverlay
       stardiv.appendChild(adiv)
     })
     overlay.appendChild(stardiv)
-
-
-    // Add pallette
-    const pallette_outer = vulogutils.makeEl('div')
-    pallette_outer.appendChild(vulogutils.makeEl('div', '', 'vulog_overlay_titles', 'Highligher Pallette'))
-    pallette_outer.appendChild(vulogutils.makeEl('div', 'vulog_overlay_palletteArea', '', ''))
-    overlay.appendChild(pallette_outer)
-    setTimeout(addPalleteeArea,5)
-
-    // Add edit_mode
-    overlay.appendChild(vulogutils.makeEl('div', null, 'vulog_overlay_titles', 'Edit mode'))
-    var editModeArea = vulogutils.makeEl('div', 'vulog_overlay_editModeArea', null, null)
-    editModeArea.style['margin-top'] = '-5px'
-    overlay.appendChild(editModeArea)
-    setTimeout(addEditModeButton,5)
 
     const vulogOverlayTextListener = function (evt) {
       vulogOverlayGlobal.extend_timer()
@@ -154,19 +163,40 @@ const showVulogOverlay = function () {
       })
     }
 
+    var pasteAsText = function (evt) {
+      // for more details and improvements: stackoverflow.com/questions/12027137/javascript-trick-for-paste-as-plain-text-in-execcommand
+      evt.preventDefault()
+      var text = evt.clipboardData.getData('text/plain"')
+      document.execCommand('insertHTML', false, text)
+    }
+
+    const selfHighlights = (vulogOverlayGlobal.self_mark && vulogOverlayGlobal.self_mark.vulog_highlights && vulogOverlayGlobal.self_mark.vulog_highlights.length > 0) ? vulogOverlayGlobal.self_mark.vulog_highlights : null
+    const redirectHighlights = (vulogOverlayGlobal.redirect_mark && vulogOverlayGlobal.redirect_mark.vulog_highlights && vulogOverlayGlobal.redirect_mark.vulog_highlights.length > 0) ? vulogOverlayGlobal.redirect_mark.vulog_highlights : null
+    const messageHighlights = (vulogOverlayGlobal.messages && vulogOverlayGlobal.messages.length > 0) ? vulogOverlayGlobal.messages : null
+    const hasHighlights = (selfHighlights || redirectHighlights || messageHighlights)
+
+    if (vulogOverlayGlobal.shown_highlight === 'self_mark' || !hasHighlights) {
+      // Add pallette
+      const pallette_outer = vulogutils.makeEl('div')
+      pallette_outer.appendChild(vulogutils.makeEl('div', '', 'vulog_overlay_titles', 'Highligher Pallette'))
+      pallette_outer.appendChild(vulogutils.makeEl('div', 'vulog_overlay_palletteArea', '', ''))
+      overlay.appendChild(pallette_outer)
+      setTimeout(addPalleteeArea, 5)
+
+      // Add edit_mode
+      overlay.appendChild(vulogutils.makeEl('div', null, 'vulog_overlay_titles', 'Edit mode'))
+      var editModeArea = vulogutils.makeEl('div', 'vulog_overlay_editModeArea', null, null)
+      editModeArea.style['margin-top'] = '-5px'
+      overlay.appendChild(editModeArea)
+      setTimeout(addEditModeButton,5)
+    }
+
     overlay.appendChild(vulogutils.makeEl('div', null, 'vulog_overlay_titles', 'Notes'))
 
     adiv = vulogutils.makeEl('div', 'vulog_overlay_notes', 'vulog_overlay_input')
     adiv.style['min-height'] = '36px'
     adiv.style.cursor = 'text'
     adiv.setAttribute('contenteditable', 'true')
-
-    var pasteAsText = function(evt) {
-  		// for more details and improvements: stackoverflow.com/questions/12027137/javascript-trick-for-paste-as-plain-text-in-execcommand
-  		evt.preventDefault();
-  		var text = evt.clipboardData.getData("text/plain");
-  	    document.execCommand("insertHTML", false, text);
-  	};
   	adiv.onpaste= function(evt) {
       pasteAsText(evt)
       vulogOverlaySaveNotesTags()
@@ -181,53 +211,69 @@ const showVulogOverlay = function () {
     //adiv.onclick = vulogOverlaySaveNotesTags
     //overlay.appendChild(adiv)
 
-    const selfHighlights = (vulogOverlayGlobal.self_mark && vulogOverlayGlobal.self_mark.vulog_highlights && vulogOverlayGlobal.self_mark.vulog_highlights.length > 0) ? vulogOverlayGlobal.self_mark.vulog_highlights : null
-    const redirectHighlights = (vulogOverlayGlobal.redirect_mark && vulogOverlayGlobal.redirect_mark.vulog_highlights && vulogOverlayGlobal.redirect_mark.vulog_highlights.length > 0) ? vulogOverlayGlobal.redirect_mark.vulog_highlights : null
-    const hasHighlights = (selfHighlights || redirectHighlights)
+    let messagenum = 0
+    var shownHighlight = null
 
     if (hasHighlights) {
       let highlightTitle = null
       if (vulogOverlayGlobal.shown_highlight === 'self_mark') {
-        highlightTitle = 'Your highlights'
+        shownHighlight = 'self'
+        highlightTitle = 'Showing Your highlights'
       } else if (vulogOverlayGlobal.shown_highlight === 'redirect_mark') {
-        highlightTitle = 'Highlights from ' + vulogOverlayGlobal.redirect_mark._data_owner + ' at server ' + vulogOverlayGlobal.redirect_mark.host
+        shownHighlight = 'redirect'
+        highlightTitle = 'Showing highlights from ' + vulogOverlayGlobal.redirect_mark._data_owner + ' @ ' + vulogOverlayGlobal.redirect_mark.host
+      } else if (vulogOverlayGlobal.shown_highlight && vulogOverlayGlobal.shown_highlight.indexOf('messages') === 0) {
+        shownHighlight = 'messages'
+        messagenum = parseInt(vulogOverlayGlobal.shown_highlight.split('_')[1])
+        highlightTitle = 'Showing highlights from ' + vulogOverlayGlobal.messages[messagenum].sender_id + ' @ ' + vulogOverlayGlobal.messages[messagenum].sender_host
       }
-      var theselect = vulogutils.makeEl('div', null, null, highlightTitle)
+      var theselect = vulogutils.makeEl('div', null, 'normheight boldtext', highlightTitle)
       theselect.style['font-size'] = '10px'
       theselect.style['margin-top'] = '10px'
 
       // add buttons
-      if (redirectHighlights) {
-        var addhighs = vulogutils.makeEl('div', null, 'vulog_overlay_butt', 'Save Highlights')
+      if (['redirect', 'messages'].indexOf(shownHighlight) >= 0) {
+        var addhighs = vulogutils.makeEl('div', null, 'vulog_overlay_butt', 'Copy Highlights')
         addhighs.onclick = function () {
           vulogOverlayGlobal.copy_highs()
         }
         theselect.appendChild(addhighs)
+      }
+      var remhighs = vulogutils.makeEl('div', null, 'vulog_overlay_butt', 'Hide Highlights')
+      remhighs.onclick = function () { vulogutils.setCookieAndReload('none') }
+      theselect.appendChild(remhighs)
 
-        var remhighs = vulogutils.makeEl('div', null, 'vulog_overlay_butt', 'Remove Highlights')
-        remhighs.onclick = function () {
-          chrome.runtime.sendMessage({ msg: 'remove_redirect' }, function (response) {
-            window.location.reload()
-          })
-        }
-        theselect.appendChild(remhighs)
-      } else {
-        const makeRadio = function (id, label, attrs) {
-          var outer = vulogutils.makeEl('div')
-          var input = vulogutils.makeEl('input', id)
-          const highlightcolor = (attrs.value === 'hide' ? null : (attrs.value === 'reshow_redirect' ? 'yellow' : 'yellowgreen'))
-          Object.keys(attrs).forEach(key => { input.setAttribute(key, attrs[key]) })
-          input.onchange = function () { setHighlightsToColor(highlightcolor) }
-          outer.appendChild(input)
-          var innerlabel = vulogutils.makeEl('label', null, null, label)
-          innerlabel.setAttribute('for', attrs.value)
-          outer.appendChild(innerlabel)
-          return outer
-        }
-        theselect.appendChild(makeRadio('vulog_h_self', 'Show', { value: 'reshow_self', name: 'show_h', type: 'radio', checked: true }))
-        theselect.appendChild(makeRadio('vulog_h_none', 'Hide', { value: 'hide', name: 'show_h', type: 'radio' }))
+      if (shownHighlight !== 'self') {
+        const showSelf = vulogutils.makeEl('div', null, 'vulog_overlay_butt', 'show Your Own Highlights')
+        showSelf.onclick = function () { vulogutils.setCookieAndReload('self') }
+        theselect.appendChild(showSelf)
       }
 
+      if (redirectHighlights || messageHighlights) {
+        const others = vulogutils.makeEl('div', null, null, 'Shared Highlights - click to show')
+        let othersCount = 0
+
+        if (redirectHighlights && shownHighlight !== 'redirect') {
+          const redirectViewButt = vulogutils.makeEl('div', null, 'vulog_overlay_butt', (vulogOverlayGlobal.redirect_mark._data_owner + ' @ ' + vulogOverlayGlobal.redirect_mark.host))
+          redirectViewButt.onclick = function () { vulogutils.setCookieAndReload('redirect') }
+          othersCount++
+          others.appendChild(redirectViewButt)
+        }
+
+        if (messageHighlights) {
+          messageHighlights.forEach((messageHl, i) => {
+            if (shownHighlight !== 'messages' || messagenum !== i) {
+              const msgViewButt = vulogutils.makeEl('div', null, 'vulog_overlay_butt', (vulogOverlayGlobal.messages[i].sender_id + ' @ ' + vulogOverlayGlobal.messages[i].sender_host))
+              const toOpen = 'messages_' + i
+              msgViewButt.onclick = function () { vulogutils.setCookieAndReload(toOpen) }
+              othersCount++
+              others.appendChild(msgViewButt)
+            }
+          })
+        }
+
+        if (othersCount) theselect.appendChild(others)
+      }
       overlay.appendChild(theselect)
     }
 
@@ -237,7 +283,6 @@ const showVulogOverlay = function () {
 }
 
   // fix this
-
 function addPalleteeArea () {
   const palletteModeArea = document.getElementById('vulog_overlay_palletteArea')
   palletteModeArea.innerHTML=''
@@ -302,7 +347,6 @@ const setCursorColor = function (){
   document.body.style.cursor = vulogOverlayGlobal.edit_mode? imageUrl : 'default';
   if (document.getElementById('vulog_overlay_notes')) document.getElementById('vulog_overlay_notes').style.cursor =  vulogOverlayGlobal.edit_mode? 'pointer':'cursor'
 }
-
 
 document.addEventListener('keydown', function (e) {
   if (!vulogOverlayGlobal.is_open && (e.ctrlKey || e.metaKey) && e.keyCode === 83) { // SHOW DIALOGUE

@@ -18,6 +18,7 @@
         <span id="logo_text">vulog</span>
         <span id="click_gototab_current" class="top_menu_item tm_opened">Current</span>
         <span id="click_gototab_inbox" class="top_menu_item tm_closed">Inbox</span>
+        <span id="click_gototab_messages" class="top_menu_item tm_closed">Messages</span>
         <span style="display:none"  id="click_gototab_history" class="top_menu_item tm_closed"> History</span>
         <span style="display:none" id="click_gototab_feed" class="top_menu_item tm_closed">Feed</span>
         <span id="click_gototab_more" class="top_menu_item tm_closed">Settings</span>
@@ -30,6 +31,8 @@
           <div id="pallette"></div>
 
           <div id="thisPage_details" width="300px"></div>
+
+          <div id = "shareOptions" style="display:none" >DIV FOR SHARING</div>
 
 
           <div class="vulog_title_subtle"><span class="fa fa-sticky-note littlestars unchosen-star"></span>Notes</div>
@@ -62,14 +65,22 @@
               This tab shows all your bookmarks marked with 'inbox' (and not 'archive'.)
             </div>
             <div>
-                <span id="click_openpopupintab">Open your inbox and bookamrks in a browser tab.</span>
-                <span id="click_switchGroupByview" data-placeholder="date">Group by referrer</span>
+                <span id="click_openpopupintab_inbox" class="openPopUpButt">Open your inbox and bookamrks in a browser tab.</span>
+                <span id="click_switchGroupByview" class="openPopUpButt" data-placeholder="date">Group by referrer</span>
             </div>
           </div>
 
           <div id="vulog_inbox_records"></div>
+        </div>
+
+        <div id="messages_tab" style="display:none">
+          <br/>
+          <span id="click_openpopupintab_msgSent" class="openPopUpButt">Show Messages Sent</span>
+          <span id="click_openpopupintab_msgRec" class="openPopUpButt">Show in browser tab.</span>
+          <div id="messages_toptitle">Messages Received</div>
 
 
+          <div id="vulog_messages_records"></div>
         </div>
 
         <div id="history_tab" style="display:none">
@@ -149,6 +160,7 @@
     </div>
 
 
+    <script src="/scripts/manifest.js"></script>
     <script src="/freezr/freezr_app_init.js"></script>
     <script src="/freezr/freezr_core.js"></script>
     <script src="/freezr/freezr_app_post_scripts.js"></script>

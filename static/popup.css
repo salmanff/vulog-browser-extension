@@ -70,7 +70,20 @@ a {
     padding-bottom: 2px;
     border-bottom: 0;
 }
-
+#shareOptions {
+  position:absolute;
+  width:150px;
+  min-width:150px;
+  background-color: white;
+  border: 1px solid yellowgreen;
+  border-radius: 3px;
+  text-align: center;
+  z-index:99999;
+  padding-top: 3px;
+  cursor: pointer;
+  text-align: left;
+  padding: 3px;
+}
 
 /* TABS */
 .separator {
@@ -131,6 +144,32 @@ a {
   height: 0px;
   overflow: hidden;
   transition: height 0.3s ease-out;
+}
+/* sharing */
+.smalltext {
+  font-size: 10px;
+}
+.shareButt {
+  display: inline-block;
+  text-align: center;
+  border-radius: 6px;
+  border: 2px solid lightgrey;
+  font-size: 10px;
+  width: fit-content;
+  color: lightgrey;
+  padding: 3px;
+  margin:3px;
+  min-width: 40px;
+  cursor: pointer;
+}
+.sharedItem {
+  border: 2px solid yellowgreen;
+  color: yellowgreen;
+}
+.messagedItem {
+}
+.shareError {
+  border: 2px solid orange;
 }
 
 /* Highlights - quotes*/
@@ -461,7 +500,11 @@ a {
   font-size: 18px;
   color: indianred;
 }
-#click_openpopupintab, #click_switchGroupByview{
+#messages_toptitle {
+  font-size: 18px;
+  color: indianred;
+}
+.openPopUpButt {
   cursor: pointer;
   margin-bottom: 20px;
   border-radius: 3px;
@@ -558,4 +601,7 @@ a {
     border-bottom: 1px grey solid;
     display: none;
     transition:height 0.3s ease-out;
+}
+.warnOnFullPage {
+    margin-top: 40px;
 }
