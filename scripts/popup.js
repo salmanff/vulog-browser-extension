@@ -15,11 +15,10 @@
 /* global lister */ // from lister.js
 /* global removeSpacesEtc */ // from utils.js
 
-/* exported gotBullHornPublicWarning, offlineCredentialsExpired */
+/* exported offlineCredentialsExpired, getItemsSharedBy */ // getItemsSharedBy to be used in future
 
 let recordingPaused
 let warningTimeOut
-let gotBullHornPublicWarning = false
 let cookieRemovalHasBeenCalled = false
 let offlineCredentialsExpired = false
 var currentLog
@@ -52,7 +51,6 @@ var opentab = function (tabName, options = {}) {
   } else if (tabName === 'bookmarks') {
     searchInTab(options)
   } else if (tabName === 'testCommand') {
-
     const toShare = {
       type: 'share-records',
       recipient_host: 'http://localhost:3000',
@@ -88,6 +86,7 @@ var opentab = function (tabName, options = {}) {
 }
 
 const getItemsSharedBy = function (user, host, accessToken, callback) {
+  console.log('for future use....')
   const data = {
     data_owner_host: host,
     data_owner_user: user,
@@ -98,7 +97,7 @@ const getItemsSharedBy = function (user, host, accessToken, callback) {
   if (!accessToken) {
     freezr.perms.validateDataOwner(data, function (ret) {
       if (!ret || ret.error || !ret['access-token']) {
-        callback(ret ? ((ret.error || 'error') + ' ' + (ret.code || '') ) : 'Error getting access token. Please try later')
+        callback(new Error(ret ? ((ret.error || 'error') + ' ' + (ret.code || '')) : 'Error getting access token. Please try later'))
       } else {
         // onsole.log('got validation ret ', ret)
         const accessToken = ret['access-token']
@@ -166,17 +165,16 @@ if (isPopUp) {
   setInterval(lister.markUpdater.checkBackgroundForChanges, UPDATE_INTERVAL)
 }
 
-const drawCurrentTabForPopUp = function (){
+const drawCurrentTabForPopUp = function () {
   const purl = tabinfo.purl
   setTimeout(function () {
     chrome.runtime.sendMessage({ msg: 'getPageData', purl: purl, tabinfo: tabinfo }, function (response) {
-      //onsole.log('getPageData', response.details)
+      // onsole.log('getPageData', response.details)
       if (response && response.success) {
         currentLog = response.details.currentLog
         marks.current = response.details.current_mark
         marks.contacts = response.details.contacts
         freezrMeta.set(response.details.freezrMeta)
-        gotBullHornPublicWarning = response.details.gotBullHornPublicWarning
         cookieRemovalHasBeenCalled = response.details.cookieRemovalHasBeenCalled
         setofflineCredentialsto(response.details.offlineCredentialsExpired)
         recordingPaused = response.details.pause_vulog
@@ -191,7 +189,7 @@ const drawCurrentTabForPopUp = function (){
         if (response.details.deleted_unbackedupdata) {
           showWarning('Some of your logged items were deleted! Please do find a Personal Data Store to be able to keep mroe data, as the web browser doesnt have any more space.', 10000)
         }
-        if (response.details.marks_data_size && response.details.marks_data_size > 1500000) {
+        if (response.details.marks_data_size && response.details.marks_data_size > 1500000 && (!freezrMeta || !freezrMeta.appToken)) {
           showWarning('You have a large amount of marks (notes and highlights) - you really need to get a personal data store or risk losing these.', 10000)
         }
         if (response.fatalErrors) showWarning('Serious Error Encountered: "' + response.fatalErrors + '".   You may want to restart your browser')

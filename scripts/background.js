@@ -145,6 +145,8 @@ var reduceSize = function () {
     }
   }
   vulog.data.logs.splice(0, Math.min(100, vulog.data.logs.length - 1))
+  vulog.data.messages.splice(0, Math.min(50, vulog.data.logs.length - 1))
+  // console.log - todo - if one shared item is HUGE, this needs to be dealt with... potential spam from others
   if (sizeOfObject(vulog.data.marks) > 3000000) {
     for (i = 0; i < Math.min(10, vulog.data.marks.length - 1); i++) {
       if (!(vulog.data.marks[i]._id && !vulog.data.marks[i].fj_modified_locally)) vulog.data.deleted_unbackedupdata = true
@@ -517,7 +519,6 @@ requestApi.getPageData = function (request, sender, sendResponse) {
 
     freezrMeta: vulog.data.freezrMeta,
 
-    gotBullHornPublicWarning: vulog.data.gotBullHornPublicWarning,
     cookieRemovalHasBeenCalled: vulog.data.cookieRemovalHasBeenCalled
   }
   vulog.data.deleted_unbackedupdata = false

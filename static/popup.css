@@ -34,6 +34,9 @@ a {
   position: fixed;
   top: 0;
 }
+.topBarViewInTab{
+  min-width: 600px;
+}
 #top_logo{
     width: 45px;
     margin-bottom: -20px;
@@ -560,7 +563,7 @@ a {
 .topBut_Mobile:before{
     font-size: 14px;
     color: #2060ff;
-    border: 2px solid #2060ff;
+    border: 1px solid #2060ff;
     padding: 5px;
     border-radius: 14px;
 }

@@ -93,6 +93,10 @@ var lister = {
     const that = this
 
     if (['messages', 'sentMsgs'].includes(options.tabtype)) {
+      // onsole.log('drawing alog', alog)
+      const fullname = (options.tabtype === 'messages'
+        ? ('From ' + alog.sender_id + ' @ ' + alog.sender_host)
+        : ('Sent to ' + alog.recipient_id + ' @ ' + alog.recipient_host))
       itemdiv.appendChild(dg.div({
         // style: { 'padding-left': '0px' }
       }, dg.div({
@@ -101,7 +105,7 @@ var lister = {
           'font-size': '12px'
         }
       },
-      alog.sender_id + ' @ ' + alog.sender_host + ':')))
+      fullname + ':')))
       itemdiv = itemdiv.firstChild
       alog.record._date_created = alog._date_created
       alog.record._date_modified = alog._date_modified
