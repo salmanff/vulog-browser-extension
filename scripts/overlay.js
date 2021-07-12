@@ -48,8 +48,9 @@ const vulogOverlayGlobal = {
   copy_highs: function () {
     vulogOverlayGlobal.extend_timer()
     if (!vulogOverlayGlobal.self_mark.vulog_highlights)vulogOverlayGlobal.self_mark.vulog_highlights = []
+    // onsole.log(vulogOverlayGlobal)
     vulogOverlayGlobal.shown_highlight_details.forEach(ahigh => vulogOverlayGlobal.self_mark.vulog_highlights.push(ahigh))
-    chrome.runtime.sendMessage({ purl: parsedPage.props.purl, highlights: vulogOverlayGlobal.redirect_mark.vulog_highlights, msg: 'copyHighlights' },
+    chrome.runtime.sendMessage({ purl: parsedPage.props.purl, highlights: vulogOverlayGlobal.shown_highlight_details, msg: 'copyHighlights' },
       function (resp) {
         if (resp.error) console.warn('Error sending info to background ', parsedPage)
         else vulogutils.setCookieAndReload('self')

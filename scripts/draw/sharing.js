@@ -421,7 +421,7 @@ const sharing = {
             const msgToSend = {
               recipient_host: grantee.serverurl,
               recipient_id: grantee.username,
-              message_permission: 'link_share',
+              sharing_permission: 'link_share',
               contact_permission: 'friends',
               table_id: 'com.salmanff.vulog.marks',
               record_id: theMark._id

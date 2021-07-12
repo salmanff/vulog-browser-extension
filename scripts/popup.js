@@ -55,7 +55,7 @@ var opentab = function (tabName, options = {}) {
       type: 'share-records',
       recipient_host: 'http://localhost:3000',
       recipient_id: 'user2',
-      message_permission: 'link_share',
+      sharing_permission: 'link_share',
       contact_permission: 'friends',
       table_id: 'com.salmanff.vulog.marks',
       record_id: 'ioKuIXC2IQ30twE8',

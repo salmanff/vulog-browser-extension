@@ -310,9 +310,9 @@ freezr.perms.validateDataOwner = function (options, callback) {
 freezr.ceps.sendMessage = function (toShare = {}, callback) {
   // toShare needsrecipient_host
   if (!toShare || !toShare.recipient_host || !toShare.recipient_id ||
-    !toShare.message_permission || !toShare.contact_permission ||
+    !toShare.sharing_permission || !toShare.contact_permission ||
     !toShare.table_id || !toShare.record_id) {
-    callback(new Error('incomplete message fields - need al of recipient_host, recipient_id, message_permission, contact_permission, table_id, record_id '))
+    callback(new Error('incomplete message fields - need al of recipient_host, recipient_id, sharing_permission, contact_permission, table_id, record_id '))
   } else {
     toShare.type = 'share-records'
     toShare.app_id = freezrMeta.appName
