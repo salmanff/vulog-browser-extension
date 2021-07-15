@@ -220,22 +220,45 @@ var addDeviceId = function (anItem) {
   return anItem
 }
 var syncContacts = function (callFwd) {
-  //onsole.log('syncContacts')
+  // onsole.log('syncContacts')
   vulog.sync('contacts', { app_table: 'dev.ceps.contacts', endCallBack: function (callFwd) { syncMessages(callFwd) } })
 }
 var syncMessages = function (callFwd) {
-  //onsole.log('syncMessages')
+  // onsole.log('syncMessages')
   vulog.sync('messages', {
     app_table: 'dev.ceps.messages.got',
     downloadedItemTransform: function (message) {
       message = JSON.parse(JSON.stringify(message))
-      if (message && message.record && message.record.purl) message.purl = message.record.purl
+      if (message && message.record && message.record.purl) {
+        message.purl = message.record.purl
+        // console.log todo - check if sender is a contact before notifying - also add as an option to not get notifications
+        const options = {
+          type: 'basic',
+          iconUrl: 'vulog logo v1.png',
+          title: ('A link from ' + message.sender_id + ' @ ' + message.sender_host),
+          message: message.record.title,
+          priority: 2
+        }
+        try {
+          chrome.notifications.create(message._id, options) // function (ret) { console.log({ ret }) }
+        } catch (e) {
+          console.warn('error creating cotification')
+        }
+      }
       return message
     },
     xtraQueryParams: { app_id: 'com.salmanff.vulog' },
     endCallBack: function (callFwd) { checkMarks(callFwd) }
   })
 }
+if (chrome.notifications) {
+  chrome.notifications.onClicked.addListener(function (notifId) {
+    const linkObj = vulog.get('messages', notifId)
+    const linkUrl = (linkObj && linkObj.record && linkObj.record.url) ? linkObj.record.url : '/static/viewintab.html?vulogTab=messages'
+    chrome.tabs.create({ url: linkUrl })
+  })
+}
+
 var checkMarks = function (callFwd) { // checks to make sure there are no conflicts
   let itemtocheck = null
   var idx = -1

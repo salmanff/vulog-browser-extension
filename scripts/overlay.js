@@ -143,9 +143,9 @@ const showVulogOverlay = function (errMsg) {
 
     const vulogOverlayTextListener = function (evt) {
       vulogOverlayGlobal.extend_timer()
-      //if (evt.keyCode === 13) evt.preventDefault() // return key
+      // if (evt.keyCode === 13) evt.preventDefault() // return key
       vulogOverlaySaveNotesTags()
-      //if ([13, 27].includes(evt.keyCode) || (evt.keyCode === 9 /* tab */ && evt.target.id === 'vulog_overlay_notes')) vulogOverlayGlobal.close() // return or escape key & tab if on notes
+      // if ([13, 27].includes(evt.keyCode) || (evt.keyCode === 9 /* tab */ && evt.target.id === 'vulog_overlay_notes')) vulogOverlayGlobal.close() // return or escape key & tab if on notes
     }
 
     const vulogOverlaySaveNotesTags = function () {
@@ -173,15 +173,22 @@ const showVulogOverlay = function (errMsg) {
 
     const selfHighlights = (vulogOverlayGlobal.self_mark && vulogOverlayGlobal.self_mark.vulog_highlights && vulogOverlayGlobal.self_mark.vulog_highlights.length > 0) ? vulogOverlayGlobal.self_mark.vulog_highlights : null
     const redirectHighlights = (vulogOverlayGlobal.redirect_mark && vulogOverlayGlobal.redirect_mark.vulog_highlights && vulogOverlayGlobal.redirect_mark.vulog_highlights.length > 0) ? vulogOverlayGlobal.redirect_mark.vulog_highlights : null
-    const messageHighlights = (vulogOverlayGlobal.messages && vulogOverlayGlobal.messages.length > 0) ? vulogOverlayGlobal.messages : null
+    var messageHighlights = (vulogOverlayGlobal.messages && vulogOverlayGlobal.messages.length > 0) ? vulogOverlayGlobal.messages : null
+    if (messageHighlights) {
+      let recheckHasHighlights = false
+      messageHighlights.forEach((messageHl, i) => {
+        if (messageHl.record && messageHl.record.vulog_highlights && messageHl.record.vulog_highlights.length > 0) recheckHasHighlights = true
+      })
+      if (!recheckHasHighlights) messageHighlights = null
+    }
     const hasHighlights = (selfHighlights || redirectHighlights || messageHighlights)
 
     if (vulogOverlayGlobal.shown_highlight === 'self_mark' || !hasHighlights) {
       // Add pallette
-      const pallette_outer = vulogutils.makeEl('div')
-      pallette_outer.appendChild(vulogutils.makeEl('div', '', 'vulog_overlay_titles', 'Highligher Pallette'))
-      pallette_outer.appendChild(vulogutils.makeEl('div', 'vulog_overlay_palletteArea', '', ''))
-      overlay.appendChild(pallette_outer)
+      const palletteOuter = vulogutils.makeEl('div')
+      palletteOuter.appendChild(vulogutils.makeEl('div', '', 'vulog_overlay_titles', 'Highligher Pallette'))
+      palletteOuter.appendChild(vulogutils.makeEl('div', 'vulog_overlay_palletteArea', '', ''))
+      overlay.appendChild(palletteOuter)
       setTimeout(addPalleteeArea, 5)
 
       // Add edit_mode
@@ -189,7 +196,7 @@ const showVulogOverlay = function (errMsg) {
       var editModeArea = vulogutils.makeEl('div', 'vulog_overlay_editModeArea', null, null)
       editModeArea.style['margin-top'] = '-5px'
       overlay.appendChild(editModeArea)
-      setTimeout(addEditModeButton,5)
+      setTimeout(addEditModeButton, 5)
     }
 
     overlay.appendChild(vulogutils.makeEl('div', null, 'vulog_overlay_titles', 'Notes'))
@@ -198,7 +205,7 @@ const showVulogOverlay = function (errMsg) {
     adiv.style['min-height'] = '36px'
     adiv.style.cursor = 'text'
     adiv.setAttribute('contenteditable', 'true')
-  	adiv.onpaste= function(evt) {
+    adiv.onpaste = function (evt) {
       pasteAsText(evt)
       vulogOverlaySaveNotesTags()
     }
@@ -208,9 +215,9 @@ const showVulogOverlay = function (errMsg) {
     if (vulogOverlayGlobal.self_mark.vulog_mark_notes && vulogOverlayGlobal.self_mark.vulog_mark_notes.trim().length > 0) adiv.textContent += vulogOverlayGlobal.self_mark.vulog_mark_notes
     overlay.appendChild(adiv)
 
-    //adiv = vulogutils.makeEl('div', 'vulog_overlay_savenotes', 'vulog_overlay_grey', 'Save Notes ')
-    //adiv.onclick = vulogOverlaySaveNotesTags
-    //overlay.appendChild(adiv)
+    // adiv = vulogutils.makeEl('div', 'vulog_overlay_savenotes', 'vulog_overlay_grey', 'Save Notes ')
+    // adiv.onclick = vulogOverlaySaveNotesTags
+    // overlay.appendChild(adiv)
 
     let messagenum = 0
     var shownHighlight = null
@@ -283,18 +290,18 @@ const showVulogOverlay = function (errMsg) {
   }
 }
 
-  // fix this
+// fix this
 function addPalleteeArea () {
   const palletteModeArea = document.getElementById('vulog_overlay_palletteArea')
-  palletteModeArea.innerHTML=''
+  palletteModeArea.innerHTML = ''
 
   const COLOR_MAP = {
-    'green' :'yellowgreen',
-    'yellow' : 'yellow',
-    'blue' : 'lightskyblue',
-    'pink' : 'lightpink',
-    'grey' : 'lightgrey',
-    'orange' : 'lightsalmon',
+    green: 'yellowgreen',
+    yellow: 'yellow',
+    blue: 'lightskyblue',
+    pink: 'lightpink',
+    grey: 'lightgrey',
+    orange: 'lightsalmon'
     // 'u' : 'underline'
   }
   var setHColor = function (hcolor, cb) {
@@ -307,11 +314,11 @@ function addPalleteeArea () {
   }
 
   const colorTable = vulogutils.makeEl('div', null, 'vulog_colorAreaDiv', '')
-  for (let [key, value] of Object.entries(COLOR_MAP)) {
-    let colorChoice = vulogutils.makeEl('div', null, 'vulog_colorPalletteChoice', '')
-    colorChoice.style['background-color'] = value;
-    colorChoice.style.border = '2px solid '+(vulogOverlayGlobal.currentHColor==key? 'darkgrey' : 'white')
-    colorChoice.onclick = function() {
+  for (const [key, value] of Object.entries(COLOR_MAP)) {
+    var colorChoice = vulogutils.makeEl('div', null, 'vulog_colorPalletteChoice', '')
+    colorChoice.style['background-color'] = value
+    colorChoice.style.border = '2px solid ' + (vulogOverlayGlobal.currentHColor === key ? 'darkgrey' : 'white')
+    colorChoice.onclick = function () {
       setHColor(key, addPalleteeArea)
     }
     colorTable.appendChild(colorChoice)
@@ -320,33 +327,33 @@ function addPalleteeArea () {
   palletteModeArea.appendChild(colorTable)
 }
 
-function addEditModeButton(){
+function addEditModeButton () {
   const editModeArea = document.getElementById('vulog_overlay_editModeArea')
-  if (editModeArea){
-    editModeArea.innerHTML=''
-    const modeButton = vulogOverlayGlobal.edit_mode?
-      vulogutils.makeEl('div', null, 'vulog_overlay_butt', ' Back to Normal ') :
-      vulogutils.makeEl('div', null, 'vulog_overlay_butt', ' Turn On Edit Mode ');
+  if (editModeArea) {
+    editModeArea.innerHTML = ''
+    const modeButton = vulogOverlayGlobal.edit_mode
+      ? vulogutils.makeEl('div', null, 'vulog_overlay_butt', ' Back to Normal ')
+      : vulogutils.makeEl('div', null, 'vulog_overlay_butt', ' Turn On Edit Mode ')
     modeButton.style['background-color'] = 'white'
     modeButton.onclick = toggleEditMode
     editModeArea.appendChild(modeButton)
   }
 }
 
-const toggleEditMode = function(){
-  vulogOverlayGlobal.edit_mode = !vulogOverlayGlobal.edit_mode;
-  addEditModeButton();
-  setCursorColor();
+const toggleEditMode = function () {
+  vulogOverlayGlobal.edit_mode = !vulogOverlayGlobal.edit_mode
+  addEditModeButton()
+  setCursorColor()
   chrome.runtime.sendMessage({ msg: 'set_edit_mode', set: (vulogOverlayGlobal.edit_mode), purl: parsedPage.props.purl }, function (response) {
-    //onsole.log(response)
+    // onsole.log(response)
   })
 }
 
-const setCursorColor = function (){
+const setCursorColor = function () {
   // onsole.log(`url(${chrome.extension.getURL('images/cursor_'+'vulogOverlayGlobal.currentHColor'+'.png')}), auto`)
-  const imageUrl = (`url(${chrome.extension.getURL('images/cursor_'+vulogOverlayGlobal.currentHColor+'.png')}), auto`)
-  document.body.style.cursor = vulogOverlayGlobal.edit_mode? imageUrl : 'default';
-  if (document.getElementById('vulog_overlay_notes')) document.getElementById('vulog_overlay_notes').style.cursor =  vulogOverlayGlobal.edit_mode? 'pointer':'cursor'
+  const imageUrl = (`url(${chrome.extension.getURL('images/cursor_' + vulogOverlayGlobal.currentHColor + '.png')}), auto`)
+  document.body.style.cursor = vulogOverlayGlobal.edit_mode ? imageUrl : 'default'
+  if (document.getElementById('vulog_overlay_notes')) document.getElementById('vulog_overlay_notes').style.cursor = vulogOverlayGlobal.edit_mode ? 'pointer' : 'cursor'
 }
 
 document.addEventListener('keydown', function (e) {
@@ -363,17 +370,17 @@ document.addEventListener('keydown', function (e) {
   }
 })
 
-var vulogMouseDown = {left:0, top:0}
-document.addEventListener('mousedown',function(evt) {
-  vulogMouseDown = {left:evt.pageX,  top:evt.pageY}
+var vulogMouseDown = { left: 0, top: 0 }
+document.addEventListener('mousedown', function (evt) {
+  vulogMouseDown = { left: evt.pageX, top: evt.pageY }
 })
-document.addEventListener('mouseup',function(evt) {
-  const pointsAreFarApart = function(p1, p2, dist) {
-    //onsole.log({p1,p2},true, (Math.abs(p1.left-p2.left)>dist || Math.abs(p1.top-p2.top)>dist))
+document.addEventListener('mouseup', function (evt) {
+  const pointsAreFarApart = function (p1, p2, dist) {
+    // onsole.log({p1,p2},true, (Math.abs(p1.left-p2.left)>dist || Math.abs(p1.top-p2.top)>dist))
     if (!p1 || !p2) return false
-    return (Math.abs(p1.left-p2.left)>dist || Math.abs(p1.top-p2.top)>dist)
+    return (Math.abs(p1.left - p2.left) > dist || Math.abs(p1.top - p2.top) > dist)
   }
-  const vulogMouseUp = {left:evt.pageX,  top:evt.pageY}
+  const vulogMouseUp = { left: evt.pageX, top: evt.pageY }
 
   if (vulogOverlayGlobal.edit_mode && pointsAreFarApart(vulogMouseDown, vulogMouseUp, 10) && document.getSelection() && document.getSelection().toString().length>0){
     highlightSelection();
