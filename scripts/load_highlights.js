@@ -37,16 +37,20 @@ const initiateHighlights = function () {
         const cookies = parseCookie(document.cookie)
         if (cookies.vulog_show) {
           showthis = cookies.vulog_show
-          if (showthis === 'none') showthis = 'none'
-          if (showthis === 'none') vulogOverlayGlobal.shown_highlight = 'none'
-          if (showthis === 'self' && vulogOverlayGlobal.self_mark) showthis = 'self_mark'
+          if (!showthis || showthis === 'none') {
+            showthis = 'none'
+            vulogOverlayGlobal.shown_highlight = 'none'
+          }
+          if (showthis === 'self') showthis = 'self_mark'
           if (showthis === 'redirect' && vulogOverlayGlobal.redirect_mark) showthis = 'redirect_mark'
         }
       }
+      if (!showthis) showthis = 'none'
       if (showthis) document.cookie = 'vulog_show=' + showthis + '; expires= ' + (new Date(new Date().getTime() + 1000)).toUTCString()
       const displayErrs = showHighlights(showthis)
       var errCount = 0
       for (const anErr in displayErrs) { if (anErr && anErr.err) errCount++ }
+      vulogOverlayGlobal.showthis = showthis
       if (errCount > 0) {
         if (showthis === 'self_mark') {
           chrome.runtime.sendMessage({ purl: parsedPage.props.purl, msg: 'marksDisplayErrs', display_errs: displayErrs }, function (response) {
@@ -81,6 +85,8 @@ const showHighlights = function (showthis) {
       vulogOverlayGlobal.shown_highlight = showthis
       vulogOverlayGlobal.shown_highlight_details = toshow.vulog_highlights
     }
+  } else {
+    vulogOverlayGlobal.shown_highlight = 'self_mark'
   }
   return displayErrs
 }

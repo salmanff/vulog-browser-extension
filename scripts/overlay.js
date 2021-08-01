@@ -8,6 +8,7 @@ setTimeout(function () {
 }, 2000)
 */
 const vulogOverlayGlobal = {
+  showthis: 'none',
   self_mark: null,
   redirect_mark: null,
   messages: null,
@@ -125,7 +126,6 @@ const showVulogOverlay = function (errMsg) {
 
     overlay.appendChild(vulogutils.makeEl('div', null, null, 'vulog bookmarks'))
 
-    let adiv = null
     var aspan = vulogutils.makeEl('span', 'vulog_overlay_cross_ch')
     aspan.onclick = vulogOverlayGlobal.close
     overlay.appendChild(aspan)
@@ -173,17 +173,17 @@ const showVulogOverlay = function (errMsg) {
 
     const selfHighlights = (vulogOverlayGlobal.self_mark && vulogOverlayGlobal.self_mark.vulog_highlights && vulogOverlayGlobal.self_mark.vulog_highlights.length > 0) ? vulogOverlayGlobal.self_mark.vulog_highlights : null
     const redirectHighlights = (vulogOverlayGlobal.redirect_mark && vulogOverlayGlobal.redirect_mark.vulog_highlights && vulogOverlayGlobal.redirect_mark.vulog_highlights.length > 0) ? vulogOverlayGlobal.redirect_mark.vulog_highlights : null
-    var messageHighlights = (vulogOverlayGlobal.messages && vulogOverlayGlobal.messages.length > 0) ? vulogOverlayGlobal.messages : null
-    if (messageHighlights) {
-      let recheckHasHighlights = false
-      messageHighlights.forEach((messageHl, i) => {
-        if (messageHl.record && messageHl.record.vulog_highlights && messageHl.record.vulog_highlights.length > 0) recheckHasHighlights = true
+    const hasMessages = (vulogOverlayGlobal.messages && vulogOverlayGlobal.messages.length > 0) ? vulogOverlayGlobal.messages : null
+    let messageHighlights = false
+    if (hasMessages) {
+      vulogOverlayGlobal.messages.forEach((messageHl, i) => {
+        if (messageHl.record && messageHl.record.vulog_highlights && messageHl.record.vulog_highlights.length > 0) messageHighlights = true
       })
-      if (!recheckHasHighlights) messageHighlights = null
     }
     const hasHighlights = (selfHighlights || redirectHighlights || messageHighlights)
+    const hasNotesOrHighs = hasHighlights || hasMessages
 
-    if (vulogOverlayGlobal.shown_highlight === 'self_mark' || !hasHighlights) {
+    if (vulogOverlayGlobal.showthis === 'self_mark' || vulogOverlayGlobal.showthis === 'none') { // || !hasHighlights
       // Add pallette
       const palletteOuter = vulogutils.makeEl('div')
       palletteOuter.appendChild(vulogutils.makeEl('div', '', 'vulog_overlay_titles', 'Highligher Pallette'))
@@ -198,49 +198,59 @@ const showVulogOverlay = function (errMsg) {
       overlay.appendChild(editModeArea)
       setTimeout(addEditModeButton, 5)
     }
+    const notesDiv = vulogutils.makeEl('div', 'vulog_overlay_notes', 'vulog_overlay_input')
+    const messagenum = 0
 
-    overlay.appendChild(vulogutils.makeEl('div', null, 'vulog_overlay_titles', 'Notes'))
+    if (vulogOverlayGlobal.showthis === 'self_mark' || vulogOverlayGlobal.showthis === 'none') {
+      overlay.appendChild(vulogutils.makeEl('div', null, 'vulog_overlay_titles', 'Notes'))
+      notesDiv.style['min-height'] = '36px'
+      notesDiv.style.cursor = 'text'
+      notesDiv.setAttribute('contenteditable', 'true')
+      notesDiv.onpaste = function (evt) {
+        pasteAsText(evt)
+        vulogOverlaySaveNotesTags()
+      }
 
-    adiv = vulogutils.makeEl('div', 'vulog_overlay_notes', 'vulog_overlay_input')
-    adiv.style['min-height'] = '36px'
-    adiv.style.cursor = 'text'
-    adiv.setAttribute('contenteditable', 'true')
-    adiv.onpaste = function (evt) {
-      pasteAsText(evt)
-      vulogOverlaySaveNotesTags()
+      notesDiv.onkeydown = vulogOverlayTextListener
+      if (vulogOverlayGlobal.self_mark.vulog_mark_tags && vulogOverlayGlobal.self_mark.vulog_mark_tags.length > 0) notesDiv.textContent += vulogOverlayGlobal.self_mark.vulog_mark_tags.join(' ')
+      if (vulogOverlayGlobal.self_mark.vulog_mark_notes && vulogOverlayGlobal.self_mark.vulog_mark_notes.trim().length > 0) notesDiv.textContent += vulogOverlayGlobal.self_mark.vulog_mark_notes
+      overlay.appendChild(notesDiv)
     }
 
-    adiv.onkeydown = vulogOverlayTextListener
-    if (vulogOverlayGlobal.self_mark.vulog_mark_tags && vulogOverlayGlobal.self_mark.vulog_mark_tags.length > 0) adiv.textContent += vulogOverlayGlobal.self_mark.vulog_mark_tags.join(' ')
-    if (vulogOverlayGlobal.self_mark.vulog_mark_notes && vulogOverlayGlobal.self_mark.vulog_mark_notes.trim().length > 0) adiv.textContent += vulogOverlayGlobal.self_mark.vulog_mark_notes
-    overlay.appendChild(adiv)
-
-    // adiv = vulogutils.makeEl('div', 'vulog_overlay_savenotes', 'vulog_overlay_grey', 'Save Notes ')
-    // adiv.onclick = vulogOverlaySaveNotesTags
-    // overlay.appendChild(adiv)
-
-    let messagenum = 0
     var shownHighlight = null
 
-    if (hasHighlights) {
+    if (hasNotesOrHighs) {
       let highlightTitle = null
-      if (vulogOverlayGlobal.shown_highlight === 'self_mark') {
+      if (vulogOverlayGlobal.showthis === 'self_mark') {
         shownHighlight = 'self'
-        highlightTitle = 'Showing Your highlights'
-      } else if (vulogOverlayGlobal.shown_highlight === 'redirect_mark') {
+        highlightTitle = 'Showing Your notes and highlights'
+      } else if (vulogOverlayGlobal.showthis === 'none') {
+        shownHighlight = 'self'
+        highlightTitle = 'Enter any notes'
+      } else if (vulogOverlayGlobal.showthis === 'redirect_mark') {
         shownHighlight = 'redirect'
         highlightTitle = 'Showing highlights from ' + vulogOverlayGlobal.redirect_mark._data_owner + ' @ ' + vulogOverlayGlobal.redirect_mark.host
-      } else if (vulogOverlayGlobal.shown_highlight && vulogOverlayGlobal.shown_highlight.indexOf('messages') === 0) {
+      } else if (vulogOverlayGlobal.showthis.includes('messages')) {
         shownHighlight = 'messages'
-        messagenum = parseInt(vulogOverlayGlobal.shown_highlight.split('_')[1])
-        highlightTitle = 'Showing highlights from ' + vulogOverlayGlobal.messages[messagenum].sender_id + ' @ ' + vulogOverlayGlobal.messages[messagenum].sender_host
+        highlightTitle = 'Showing notes and highlights from ' + vulogOverlayGlobal.messages[messagenum].sender_id + ' @ ' + vulogOverlayGlobal.messages[messagenum].sender_host
       }
+
+      // overlay.appendChild(vulogutils.makeEl('div', null, null, highlightTitle))
+
       var theselect = vulogutils.makeEl('div', null, 'normheight boldtext', highlightTitle)
       theselect.style['font-size'] = '10px'
       theselect.style['margin-top'] = '10px'
 
+      if (shownHighlight !== 'self' && vulogOverlayGlobal.messages[messagenum].record.vulog_mark_notes) {
+        notesDiv.innerText = vulogOverlayGlobal.messages[messagenum].record.vulog_mark_notes
+        notesDiv.style.color = 'blue'
+        overlay.appendChild(notesDiv)
+      }
+
       // add buttons
-      if (['redirect', 'messages'].indexOf(shownHighlight) >= 0) {
+      const hasAMessageHighlight = vulogOverlayGlobal.messages[messagenum].record && vulogOverlayGlobal.messages[messagenum].record.vulog_highlights && vulogOverlayGlobal.messages[messagenum].record.vulog_highlights.length > 0
+      if (['redirect', 'messages'].indexOf(shownHighlight) >= 0 && hasAMessageHighlight) {
+        // console.log todo add similar logic for redirectHighlights
         var addhighs = vulogutils.makeEl('div', null, 'vulog_overlay_butt', 'Copy Highlights')
         addhighs.onclick = function () {
           vulogOverlayGlobal.copy_highs()
@@ -252,12 +262,12 @@ const showVulogOverlay = function (errMsg) {
       theselect.appendChild(remhighs)
 
       if (shownHighlight !== 'self') {
-        const showSelf = vulogutils.makeEl('div', null, 'vulog_overlay_butt', 'show Your Own Highlights')
+        const showSelf = vulogutils.makeEl('div', null, 'vulog_overlay_butt', 'show Your Own Notes and Highlights')
         showSelf.onclick = function () { vulogutils.setCookieAndReload('self') }
         theselect.appendChild(showSelf)
       }
 
-      if (redirectHighlights || messageHighlights) {
+      if (redirectHighlights || messageHighlights || hasMessages) {
         const others = vulogutils.makeEl('div', null, null, 'Shared Highlights - click to show')
         let othersCount = 0
 
@@ -268,8 +278,8 @@ const showVulogOverlay = function (errMsg) {
           others.appendChild(redirectViewButt)
         }
 
-        if (messageHighlights) {
-          messageHighlights.forEach((messageHl, i) => {
+        if (messageHighlights || hasMessages) {
+          vulogOverlayGlobal.messages.forEach((messageHl, i) => {
             if (shownHighlight !== 'messages' || messagenum !== i) {
               const msgViewButt = vulogutils.makeEl('div', null, 'vulog_overlay_butt', (vulogOverlayGlobal.messages[i].sender_id + ' @ ' + vulogOverlayGlobal.messages[i].sender_host))
               const toOpen = 'messages_' + i
@@ -286,7 +296,7 @@ const showVulogOverlay = function (errMsg) {
     }
 
     document.body.appendChild(overlay)
-    if (!redirectHighlights) document.getElementById('vulog_overlay_notes').focus()
+    if (!redirectHighlights && document.getElementById('vulog_overlay_notes')) document.getElementById('vulog_overlay_notes').focus()
   }
 }
 

@@ -171,6 +171,9 @@ a {
 }
 .messagedItem {
 }
+.inProgress {
+  cursor: default;
+}
 .shareError {
   border: 2px solid orange;
 }
@@ -267,15 +270,17 @@ a {
 }
 .note_inner {
   width:450px;
-  border-radius: 3px;
-  border: 1px solid lightgrey;
   display: inline-block;
   min-height:15px;
   padding:5px;
   background-color: white;
   color:yellowgreen;
-  -webkit-user-modify: read-write;
   text-align: left;
+}
+.noteEditable {
+  border-radius: 3px;
+  border: 1px solid lightgrey;
+  -webkit-user-modify: read-write;
   cursor: text;
 }
 .note_inner:empty:before {

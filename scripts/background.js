@@ -236,7 +236,7 @@ var syncMessages = function (callFwd) {
           type: 'basic',
           iconUrl: 'vulog logo v1.png',
           title: ('A link from ' + message.sender_id + ' @ ' + message.sender_host),
-          message: message.record.title,
+          message: (message.record.vulog_mark_notes ? (message.record.vulog_mark_notes + ' : ') : '') + message.record.title,
           priority: 2
         }
         try {
@@ -546,7 +546,9 @@ requestApi.getPageData = function (request, sender, sendResponse) {
   }
   vulog.data.deleted_unbackedupdata = false
   const NUM_FRENDS_TO_FETCH = 10
-  details.contacts = (vulog.data.contacts && vulog.data.contacts.length > NUM_FRENDS_TO_FETCH) ? vulog.data.contacts.slice(0, NUM_FRENDS_TO_FETCH) : (vulog.data.contacts.slice(0) || [])
+  details.contacts = (vulog.data.contacts && vulog.data.contacts.length > NUM_FRENDS_TO_FETCH)
+    ? vulog.data.contacts.slice(0, NUM_FRENDS_TO_FETCH)
+    : ((vulog.data.contacts && vulog.data.contacts.length > 0) ? vulog.data.contacts.slice(0) : [])
   details.contacts = details.contacts.sort(function (a, b) {
     if (a.used && b.used) return a.used > b.used
     if (a.used) return 1

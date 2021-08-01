@@ -345,15 +345,17 @@ var lister = {
 
   // drawNote in list
   drawNote: function (aMark, options) {
+    if (aMark.vulog_mark_notes) console.log('draw note ', aMark.vulog_mark_notes, { options })
     if (!aMark.vulog_mark_notes) aMark.vulog_mark_notes = ''
-    if (['messages','sentMsgs'].includes(options.tabtype) && !aMark.vulog_mark_notes) return dg.span()
+    const isMessage = ['messages', 'sentMsgs'].includes(options.tabtype)
+    if (isMessage && !aMark.vulog_mark_notes) return dg.span()
     return dg.div({ className: 'quote_outer' },
-      dg.span({ className: 'note_left' }),
+      dg.span({ className: 'note_left' + (isMessage ? '' : ' noteEditable') }),
       dg.span({
         className: 'note_inner',
-        contenteditable: 'true',
-        'data-placeholder': 'Enter notes on this page.',
-        onkeydown: function (evt) {
+        contenteditable: (isMessage ? 'false' : 'true'),
+        'data-placeholder': (isMessage ? '' : 'Enter notes on this page.'),
+        onkeydown: isMessage ? null : function (evt) {
           setTimeout(function () {
             var theNotes = evt.target.textContent
             aMark.vulog_mark_notes = theNotes

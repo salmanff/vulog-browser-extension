@@ -142,8 +142,8 @@ const sharing = {
         sharing.firstClickMadeNoDouble = true
         setTimeout(function () {
           // e.target.
-          if (sharing.firstClickMadeNoDouble) {
-            const buttonDiv = e.target.className.includes('shareButt') ? e.target : e.target.parentElement
+          const buttonDiv = e.target.className.includes('shareButt') ? e.target : e.target.parentElement
+          if (sharing.firstClickMadeNoDouble && !buttonDiv.className.includes('inProgress')) {
             const shareOptions = dg.el('shareOptions', { clear: true })
             const wasGranted = (e.target.className.includes('sharedItem'))
             shareOptions.style.top = ((e.target.offsetTop + 5) + 'px')
@@ -164,8 +164,8 @@ const sharing = {
               }
             }
             shareOptions.onclick = function () {
-              sharing.shareFromButton(buttonDiv, grantee, doGrant)
               shareOptions.style.display = 'none'
+              sharing.shareFromButton(buttonDiv, grantee, doGrant)
             }
             shareOptions.style.display = 'block'
           }
@@ -367,19 +367,28 @@ const sharing = {
     // dg.img({ src: '/freezr/static/ajaxloaderBig.gif' })
   },
   shareFromButton: function (buttonDiv, grantee, doGrant) {
+    const nickName = grantee.nickname // buttonDiv.innerText
+    buttonDiv.innerHTML = ''
+    buttonDiv.appendChild(dg.img({
+      src: '/freezr/static/ajaxloaderBig.gif',
+      style: { width: '15px', 'margin-top': '-4px', 'margin-bottom': '-4px' }
+    }))
+    buttonDiv.className = buttonDiv.className + ' inProgress'
     sharing.shareCurrentLink(grantee, doGrant, function (err, resp) {
       // onsole.log('shareCurrentLink ', { err, resp })
       if (err) console.warn('shareCurrentLink err.message =' + err.message + '=')
       if (!err && resp && resp.recordsChanged === 1) {
         buttonDiv.className = 'shareButt' + (doGrant ? (grantee === '_public' ? ' sharedItem' : ' sharedItem messagedItem') : '')
-        // if (buttonDiv.innerText === 'Public post') buttonDiv.previousSibling.innerText = sharing.textForPublic(!wasGranted)
+        // if (currentName === 'Public post') buttonDiv.previousSibling.innerText = sharing.textForPublic(!wasGranted)
         if (!doGrant && dg.el('sharedWithPublicInTitle')) dg.el('sharedWithPublicInTitle').style.display = 'none'
       } else if (err && err.message === 'incomplete transmission') {
         // onsole.log('incomplete transmission - marks as shareError ')
         buttonDiv.className = 'shareButt' + (doGrant ? ' sharedItem messagedItem shareError' : '')
       } else {
-        showWarning('Error setting mark ' + ((err && err.message) ? err.message : ''))
+        showWarning('Error sharing mark ' + ((err && err.message) ? err.message : ''))
+        buttonDiv.className = 'shareButt' + (doGrant ? ' sharedItem messagedItem shareError' : '')
       }
+      buttonDiv.innerText = nickName
       chrome.runtime.sendMessage({ msg: 'shared', grantee }, function (response) {
         // console.log(response)
       })
@@ -395,7 +404,8 @@ const sharing = {
           return new Error('permission no logner exists')
         } else if (!theMark || !theMark.fj_local_temp_unique_id) {
           return new Promise((resolve, reject) => {
-            sharing.getOrCreateMarkId((theMark.purl || currentLog.purl), function (err, item) {
+            const thePurl = (theMark && theMark.purl) ? theMark.purl : currentLog.purl
+            sharing.getOrCreateMarkId(thePurl, function (err, item) {
               // console.log(' getOrCreateMarkId  theMark.purl : ', theMark.purl , ' currentLog.purl : ', currentLog.purl)
               if (err) { reject(err) } else { resolve(item) }
             })
