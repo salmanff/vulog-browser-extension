@@ -1,12 +1,16 @@
 // pageData.js - part of vulog
+// changed 2022-04
+// Compare iosApp vs ChromeExtension - verified 2022-07-05
 
 /* exported VuPageData */
+/* global pureUrlify, domainAppFromUrl, addToListAsUniqueItems, cleanTextForEasySearch, startsWith, endsWith, hostFromUrl */
 
-function VuPageData () {
-  this.props = getAllPageTags()
+function VuPageData (options) {
+  if (!options) options = { ignoreNonStandard: true, ignoreCookies: false }
+  this.props = getAllPageTags(options)
 }
 
-const getAllPageTags = function (options = { ignore_unknowns: true }) {
+const getAllPageTags = function (options) {
   // initiates parsedTags and gets all meta data assuming there is a document in window
   let parsedTags = {
     url: window.location.href,
@@ -14,26 +18,28 @@ const getAllPageTags = function (options = { ignore_unknowns: true }) {
     purl: pureUrlify(window.location.href),
     hasBody: haveBody(),
     referrer: document.referrer,
-    vulog_timestamp: new Date().getTime()
+    vCreated: new Date().getTime()
   }
-  try {
-    parsedTags.vulog_cookies = getCookies()
-  } catch (e) {
-    console.warn('Error getting cookie from ' + window.location.href + ' \n '+ JSON.stringify(e))
-    parsedTags.vulog_hidden_cees = true
-  }
+  if (document.getElementsByTagName('title') && document.getElementsByTagName('title')[0]) parsedTags.title = document.getElementsByTagName('title')[0].innerText
+  // let oldVersion = (document.getElementsByTagName('title') && document.getElementsByTagName('title')[0]) ? document.getElementsByTagName('title')[0].innerText : 'no title at beg'
 
-  if (parsedTags.hasBody) {
-    if (document.getElementsByTagName('title') && document.getElementsByTagName('title')[0]) parsedTags.title = document.getElementsByTagName('title')[0].innerText
-
+  if (haveBody()) {
     const allMetas = document.getElementsByTagName('meta')
-
-    parsedTags = addMetaTotags(parsedTags, allMetas)
-
+    parsedTags = addMetaTotags(parsedTags, allMetas, options)
     parsedTags.vuLog_height = document.getElementsByTagName('BODY')[0].scrollHeight
   }
-  const [vulog3pjs, vulog3pimg] = get3rdPartyLinks()
-  parsedTags.vulog_3rdParties = { js: vulog3pjs, img: vulog3pimg }
+
+  if (!options.ignoreCookies) {
+    try {
+      parsedTags.vulog_cookies = getCookies()
+    } catch (e) {
+      console.warn('Error getting cookie from ' + window.location.href + ' \n ' + JSON.stringify(e))
+      parsedTags.vulog_hidden_cees = true
+    }
+
+    const [vulog3pjs, vulog3pimg] = get3rdPartyLinks()
+    parsedTags.vulog_3rdParties = { js: vulog3pjs, img: vulog3pimg }
+  }
 
   return parsedTags
 }
@@ -69,10 +75,10 @@ const EQUIV_NAMES = {
   'og:image': 'image',
   'sailthru.image.full': 'image',
 
-  'og:site_name': 'domain_app', // Any one of these (pref: application-name) and if not the domain
-  'al:android:app_name': 'domain_app',
-  'al:ios:app_name': 'domain_app',
-  'application-name': 'domain_app',
+  'og:site_name': 'domainApp', // Any one of these (pref: application-name) and if not the domain
+  'al:android:app_name': 'domainApp',
+  'al:ios:app_name': 'domainApp',
+  'application-name': 'domainApp',
 
   'article:published_time': 'published',
   'article:published': 'published',
@@ -80,7 +86,7 @@ const EQUIV_NAMES = {
   'article:modified': 'modified',
   'article:modified_time': 'modified'
 }
-const OTHER_NAMES = [ // These are recorded
+const NON_STD_NAMES = [ // These are recorded
   'sailthru.date', 'date',
   'twitter:app:country', 'og:locale', 'outbrain:sourcename',
   'generator', 'Generator', 'twitter:creator', 'article:publisher',
@@ -110,17 +116,17 @@ const IGNORE_NAMES = [
   'edt', 'twitter:image:alt', 'article:tag', 'des', 'nyt-collection:display-name', 'nyt-collection:identifier',
   'nyt-collection:url', 'nyt-collection:uri', 'nyt-collection:tone', 'nyt-collection:type', 'CN', 'CT', 'dfp-ad-unit-path', 'dfp-amazon-enabled'
 ]
-const addMetaTotags = function (parsedTags, allMetas, options = { ignore_unknowns: true }) {
+const addMetaTotags = function (parsedTags, allMetas, options = { ignoreNonStandard: true }) {
   // assumes title url purl ... have already been added to ParsedTags and adds other meta objects
-  const EMPTY_STR = ['type', 'author', 'description', 'published', 'modified', 'domain_app']
+  const EMPTY_STR = ['type', 'author', 'description', 'published', 'modified', 'domainApp']
   EMPTY_STR.forEach(tag => { parsedTags[tag] = '' })
   const EMPTY_ARRS = ['keywords', 'temp_unknown_tags', 'vulog_visit_details']
   EMPTY_ARRS.forEach(tag => { parsedTags[tag] = [] })
   parsedTags.other = {}
 
   // console 2020 todo review all tags
-  parsedTags.vulog_kword2 = renderUrlToCleanedText(parsedTags.url)
-  parsedTags.vulog_kword2 = addToListAsUniqueItems(parsedTags.vulog_kword2, renderUrlToCleanedText(parsedTags.referrer))
+  parsedTags.vSearchWords = renderUrlToCleanedText(parsedTags.url)
+  parsedTags.vSearchWords = addToListAsUniqueItems(parsedTags.vSearchWords, renderUrlToCleanedText(parsedTags.referrer))
 
   // get all meta data
   let mName
@@ -136,76 +142,34 @@ const addMetaTotags = function (parsedTags, allMetas, options = { ignore_unknown
             console.warn('some body is trying to play nasty tricks on vulog. ;)')
           } else if (['keywords'].indexOf(EQUIV_NAMES[mName]) > -1) { // Add all unique words
             parsedTags[EQUIV_NAMES[mName]] = addToListAsUniqueItems(parsedTags[EQUIV_NAMES[mName]], cleanTextForEasySearch(m.getAttribute('content')).split(' '))
-          } else if (EQUIV_NAMES[mName] === 'domain_app') {
-            parsedTags.domain_app = (mName === 'application-name' || !parsedTags.domain_app) ? m.getAttribute('content') : parsedTags.domain_app
+          } else if (EQUIV_NAMES[mName] === 'domainApp') {
+            parsedTags.domainApp = (mName === 'application-name' || !parsedTags.domainApp) ? m.getAttribute('content') : parsedTags.domainApp
           } else if (EQUIV_NAMES[mName] === mName) {
             parsedTags[mName] = m.getAttribute('content')
           } else if (!parsedTags[EQUIV_NAMES[mName]]) {
             parsedTags[EQUIV_NAMES[mName]] = m.getAttribute('content')
           }
-          parsedTags.vulog_kword2 = addToListAsUniqueItems(parsedTags.vulog_kword2, cleanTextForEasySearch(m.getAttribute('content')).split(' '))
-        } else if (IGNORE_NAMES.indexOf(mName) < 0 && !options.ignore_unknowns) {
+          parsedTags.vSearchWords = addToListAsUniqueItems(parsedTags.vSearchWords, cleanTextForEasySearch(m.getAttribute('content')).split(' '))
+        } else if (IGNORE_NAMES.indexOf(mName) < 0 && !options.ignoreNonStandard) {
           parsedTags.other[mName.split('.').join('_')] = m.getAttribute('content')
-          if (OTHER_NAMES.indexOf(mName) < 0) parsedTags.temp_unknown_tags.push(mName)
+          if (NON_STD_NAMES.indexOf(mName) < 0) parsedTags.temp_unknown_tags.push(mName)
         }
       }
     }
   }
 
-  parsedTags.domain_app = parsedTags.domain_app ? (parsedTags.domain_app.toLowerCase()) : (domainAppFromUrl(parsedTags.url))
+  parsedTags.domainApp = parsedTags.domainApp ? (parsedTags.domainApp.toLowerCase()) : (domainAppFromUrl(parsedTags.url))
   EMPTY_STR.forEach(tag => { if (parsedTags[tag] === '') delete parsedTags[tag] })
   EMPTY_ARRS.forEach(tag => { if (parsedTags[tag].length === 0) delete parsedTags[tag] })
 
   if (!parsedTags.isiframe) { // ie is masterpage
     parsedTags.fj_modified_locally = new Date().getTime()
-    parsedTags.vulog_sub_pages = []
+    if (!options.ignoreCookies) parsedTags.vulog_sub_pages = []
   }
   return parsedTags
 }
 
-// Utility functions
-const domainAppFromUrl = function (url) {
-  if (!url) return url
-  let temp = url.split('://')
-  if (temp.length > 1) temp.shift()
-  temp = temp[0].split('/')[0]
-  temp = temp.split('.')
-  while (temp.length > 2) { temp.shift() }
-  temp = temp.join('.')
-  return temp
-}
-const pureUrlify = function (aUrl) {
-  if (!aUrl) return null
-  if (aUrl.indexOf('#') > 0) aUrl = aUrl.slice(0, aUrl.indexOf('#'))
-  if (aUrl.slice(-1) === '/') { aUrl = aUrl.slice(0, -1) }
-  return aUrl.trim()
-}
-
-const corePurl = function (aUrl) {
-  aUrl = pureUrlify(aUrl)
-  return aUrl.split('?')[0]
-}
-const addToListAsUniqueItems = function (aList, items, transform) {
-  // takes two lists..  integrates items into aList without duplicates
-  // if items are strins or numbers, they are treated as a one item list
-  if (!aList) aList = []
-  if (!items) return aList
-  if (typeof items === 'string' || !isNaN(items)) items = [items]
-  if (!Array.isArray(items)) { throw new Error('items need to be a list') }
-  if (transform) items = items.map(transform)
-  items.forEach(function (anItem) { if (anItem && anItem !== ' ' && aList.indexOf(anItem) < 0 && anItem.length > 0) aList.push(anItem) })
-  return aList
-}
-const cleanTextForEasySearch = function (aText) {
-  // onsole.log('cleaning '+aText)
-  const seps = ['.', '/', '+', ':', '@', '#', '-', '_', '|', '?', ', ', '…', '&', '=']
-  if (Array.isArray(aText)) aText = aText.join(' ')
-  aText = aText.replace(/é/g, 'e').replace(/è/g, 'e').replace(/ö/g, 'o').replace(/à/g, 'a').replace(/ä/g, 'a').replace(/%/g, 'à')
-  aText = decodeURIComponent(aText + '')
-  aText = aText.replace(/à/g, '%')
-  seps.forEach(function (aSep) { aText = aText.split(aSep).join(' ') })
-  return aText.toLowerCase()
-}
+// Utility functions specific to pageData
 const renderUrlToCleanedText = function (aUrl) {
   return addToListAsUniqueItems([], cleanTextForEasySearch(aUrl),
     function (x) { return ((x + '').length === 1) ? '' : x })
@@ -221,6 +185,10 @@ const getCookies = function () {
   // old: let splits = oneC.split('='); cookies[splits[0].replace(/\./g, '_')] = splits[1]
   return cookies
 }
+const corePurl = function (aUrl) {
+  aUrl = pureUrlify(aUrl)
+  return aUrl.split('?')[0]
+}
 const get3rdPartyLinks = function () {
   var vulog3pjs = []
   var vulog3pimg = []
@@ -232,22 +200,6 @@ const get3rdPartyLinks = function () {
     }
   }
   return [vulog3pjs, vulog3pimg]
-}
-
-const startsWith = function (longWord, portion) {
-  return (typeof longWord === 'string' && longWord.indexOf(portion) === 0)
-}
-const removeStart = function (longWord, portion) {
-  if (startsWith(longWord, portion)) { return (longWord.slice(portion.length)) } else { return longWord }
-}
-const endsWith = function (longWord, portion) {
-  return (longWord.indexOf(portion) === (longWord.length - portion.length))
-}
-const hostFromUrl = function (url) {
-  url = removeStart(url, 'https://')
-  url = removeStart(url, 'http://')
-  url = url.substring(0, url.indexOf('/'))
-  return url
 }
 const toplevel = function (url) {
   url = hostFromUrl(url)

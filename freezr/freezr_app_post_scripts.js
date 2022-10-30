@@ -1,3 +1,5 @@
+// freezr_app_post_scripts.js
+
 // info.freezr.public - updated 2021
 /*
   This file is used for stand alone apps that do not run on the freezr server.

@@ -5,6 +5,10 @@
 /* global toggleCollapse, addToListAsUniqueItems, removeFromlist */ // from utils
 /* global dg */ // from dgelements.js
 /* global showWarning, currentLog, tabinfo, marks, COLOR_MAP, thisTab */ // from popup.js
+/* from popupChromeExt - added a dummy */
+/* global vulogOverlayGlobal */
+
+/* global freezrMeta, freezr */
 
 const SEARCH_COUNT = 40
 
@@ -35,7 +39,7 @@ var lister = {
     date: function (results, options) {
       const dateDivs = {}
       results.forEach(alog => {
-        const thisdate = new Date(['messages','sentMsgs'].includes(options.tabtype) ? alog._date_modified : alog.vulog_timestamp).toDateString()
+        const thisdate = new Date(['messages','sentMsgs'].includes(options.tabtype) ? alog._date_modified : alog.vCreated).toDateString()
         if (!dateDivs[thisdate]) {
           dateDivs[thisdate] = dg.div(
             { style: { 'font-size': '18px', color: 'indianred', 'margin-top': (['messages','sentMsgs'].includes(options.tabtype) ? '20px' : '40px') } },
@@ -162,7 +166,7 @@ var lister = {
           })
         }
       },
-      (alog.title ? (alog.domain_app + ' - ' + alog.title) : alog.url)
+      (alog.title ? (alog.domainApp + ' - ' + alog.title) : alog.url)
       )
     ))
 
@@ -205,7 +209,7 @@ var lister = {
     },
     dg.div({ style: { 'margin-top': '3px', color: 'darkgray', 'font-size': '11px' } },
       dg.div({ style: { 'margin-bottom': '3px', color: 'darkgray' } },
-        'Created: ' + (new Date(alog.vulog_timestamp || alog._date_created).toLocaleDateString() + ' ' + (alog.vulog_timestamp ? (' (Modified: ' + (new Date(alog._date_modified || alog.fj_modified_locally).toLocaleDateString()) + ')') : ''))),
+        'Created: ' + (new Date(alog.vCreated || alog._date_created).toLocaleDateString() + ' ' + (alog.vCreated ? (' (Modified: ' + (new Date(alog._date_modified || alog.fj_modified_locally).toLocaleDateString()) + ')') : ''))),
       dg.div({ style: { 'margin-bottom': '3px', color: 'darkgray' } },
         dg.a({ href: alog.purl, target: '_blank' }, 'full url:' + alog.purl)),
       dg.div({ style: { 'margin-bottom': '3px', color: 'darkgray', display: (alog.referrer ? 'block' : 'none') } },
@@ -213,11 +217,12 @@ var lister = {
           'referred by: ' + alog.referrer))
     ),
     bookmarkchoices(),
-    lister.drawNote(alog, options)
+    vulogOverlayGlobal.drawCommentsSection(alog, alog.purl, { markId: (alog.id || alog.fj_local_temp_unique_id) })
+    // lister.drawNote(alog, options)
     )
 
-    if (alog.vulog_highlights && alog.vulog_highlights.length > 0) {
-      if (alog.vulog_highlights) alog.vulog_highlights.forEach((item, i) => detailsdiv.appendChild(lister.drawHighlight(item, { include_delete: false, show_display_errs: false })))
+    if (alog.vHighlights && alog.vHighlights.length > 0) {
+      if (alog.vHighlights) alog.vHighlights.forEach((item, i) => detailsdiv.appendChild(lister.drawHighlight(item, alog.purl, { include_delete: false, show_display_errs: false })))
     }
 
     if (options.leaveOpen) detailsdiv.setAttribute('data-collapsed', 'true')
@@ -240,29 +245,30 @@ var lister = {
     if (source !== 'date') {
       topstarspan.appendChild(dg.span((new Date(alog._date_modified || alog.fj_modified_locally).toLocaleDateString()) + ' '))
     }
-    let chosenstars = (alog.vulog_mark_stars && alog.vulog_mark_stars.length > 0) ? [...alog.vulog_mark_stars] : []
-    if (alog.vulog_mark_notes && alog.vulog_mark_notes.length > 0) chosenstars.push('sticky-note')
-    if (alog.vulog_highlights && alog.vulog_highlights.length > 0) chosenstars = [...chosenstars, ...['quote-left', 'quote-right']]
+    let chosenstars = (alog.vStars && alog.vStars.length > 0) ? [...alog.vStars] : []
+    if ((alog.vNote && alog.vNote.length > 0) || (alog.vComments && alog.vComments.length > 0)) chosenstars.push('sticky-note')
+    if (alog.vHighlights && alog.vHighlights.length > 0) chosenstars = [...chosenstars, ...['quote-left', 'quote-right']]
     chosenstars.forEach(aStar => {
       topstarspan.appendChild(dg.span({
         className: 'fa fa-' + aStar + ' littlestars chosen-star'
       }))
       if (aStar === 'sticky-note') {
-        topstarspan.appendChild(dg.span({ style: { 'margin-right': '5px' } }, ('"' + alog.vulog_mark_notes.substring(0, 100) + '..." ')))
+        const text = alog.vNote || ((alog.vComments && alog.vComments.length > 0 && alog.vComments[0].text) ? alog.vComments[0].text : '')
+        topstarspan.appendChild(dg.span({ style: { 'margin-right': '5px' } }, ('"' + text.substring(0, 100) + '..." ')))
       } else if (aStar === 'quote-left') {
-        topstarspan.appendChild(dg.span({ style: { 'margin-left': '-3px', 'margin-right': '2px' } }, (alog.vulog_highlights.length + ' highlight' + (alog.vulog_highlights.length > 1 ? 's' : ''))))
+        topstarspan.appendChild(dg.span({ style: { 'margin-left': '-3px', 'margin-right': '2px' } }, (alog.vHighlights.length + ' highlight' + (alog.vHighlights.length > 1 ? 's' : ''))))
       }
     })
 
-    if (!alog.vulog_mark_notes || alog.vulog_mark_notes.length === 0) topstarspan.appendChild(dg.span(' see details'))
+    if (!alog.vNote || alog.vNote.length === 0) topstarspan.appendChild(dg.span(' see details'))
 
     return topstarspan
   },
   updateStarsDiv: function (amark, topstarspan) {
     if (currentLog && amark.purl === currentLog.purl) {
-      lister.drawStarsDiv('currentStars', amark.vulog_mark_stars)
+      lister.drawStarsDiv('currentStars', amark.vStars)
       dg.el('addRemoveStars', { clear: true }).appendChild(lister.addBookmarkChoices(amark))
-      if (amark.vulog_mark_stars && amark.vulog_mark_stars.length > 0) {
+      if (amark.vStars && amark.vStars.length > 0) {
         dg.el('currentStars').style.height = '30px'
       }
     }
@@ -298,7 +304,7 @@ var lister = {
   },
   starAdder: function (starName, log, topstarspan, source) {
     log = log || {}
-    const starList = (log.vulog_mark_stars) ? log.vulog_mark_stars : []
+    const starList = (log.vStars) ? log.vStars : []
     const doRemove = starList.includes(starName)
 
     return dg.span({
@@ -322,12 +328,12 @@ var lister = {
             showWarning((response ? response.error : 'Error saving mark.'))
           } else {
             if (doRemove) {
-              var starIdx = log.vulog_mark_stars.indexOf(starName)
-              if (starIdx > -1) log.vulog_mark_stars.splice(starIdx, 1)
-            } else if (!log.vulog_mark_stars) {
-              log.vulog_mark_stars = [starName]
+              var starIdx = log.vStars.indexOf(starName)
+              if (starIdx > -1) log.vStars.splice(starIdx, 1)
+            } else if (!log.vStars) {
+              log.vStars = [starName]
             } else {
-              log.vulog_mark_stars.push(starName)
+              log.vStars.push(starName)
             }
             lister.updateStarsDiv(log, topstarspan)
             const bookMarkChoiceHolder = evt.target.parentElement.parentElement
@@ -343,50 +349,18 @@ var lister = {
     )
   },
 
-  // drawNote in list
-  drawNote: function (aMark, options) {
-    if (aMark.vulog_mark_notes) console.log('draw note ', aMark.vulog_mark_notes, { options })
-    if (!aMark.vulog_mark_notes) aMark.vulog_mark_notes = ''
-    const isMessage = ['messages', 'sentMsgs'].includes(options.tabtype)
-    if (isMessage && !aMark.vulog_mark_notes) return dg.span()
-    return dg.div({ className: 'quote_outer' },
-      dg.span({ className: 'note_left' + (isMessage ? '' : ' noteEditable') }),
-      dg.span({
-        className: 'note_inner',
-        contenteditable: (isMessage ? 'false' : 'true'),
-        'data-placeholder': (isMessage ? '' : 'Enter notes on this page.'),
-        onkeydown: isMessage ? null : function (evt) {
-          setTimeout(function () {
-            var theNotes = evt.target.textContent
-            aMark.vulog_mark_notes = theNotes
-            chrome.runtime.sendMessage({
-              msg: 'save_notes',
-              purl: aMark.purl,
-              id: aMark._id,
-              notes: theNotes
-            }, function (response) {
-              if (!response || response.error) {
-                showWarning((response ? response.error : 'error saving note'))
-              }
-              lister.markUpdater.updated()
-            })
-          }, 0)
-        }
-      },
-      aMark.vulog_mark_notes)
-    )
-  },
-
   // draw highlights
-  drawHighlight: function (item, options) {
+  drawHighlight: function (item, purl, options) {
+    // onsole.log('drawHighlight ', { item })
     let deleter = dg.div({})
-    let displayErr = dg.div({})
+    let displayErrDiv = dg.div({})
     if (options.include_delete) {
       deleter = dg.div({
         className: 'del_quote',
         onclick: function (e) {
-          const hlightDate = this.getAttribute('highlight-date')
-          chrome.runtime.sendMessage({ msg: 'deleteHighlight', purl: marks.current.purl, h_date: hlightDate }, function (response) {
+          const hlightId = this.getAttribute('hlightId')
+          // todo - change this to removeHighlight
+          chrome.runtime.sendMessage({ msg: 'removeHighlight', url: marks.current.purl, hlightId: hlightId }, function (response) {
             if (!response || !response.success) {
               showWarning('Error trying to delete highlight (' + response.error + ')')
             } else {
@@ -402,11 +376,26 @@ var lister = {
         },
         style: { display: 'none' }
       }, 'Click again here to remove quote')
-      deleter.setAttribute('highlight-date', item.h_date)
+      deleter.setAttribute('hlightId', item.id)
     }
-    if (options.show_display_errs && item.displayErr) {
-      displayErr = dg.div({ className: 'quote_display_err' },
+    if (options.show_display_errs && item.displayErrDiv) {
+      displayErrDiv = dg.div({ className: 'quote_display_err' },
         'This quote was not found and so it is not highlighted on the page')
+    }
+    const commentSection = function () {
+      const hasAnnotations = (item.vComments && item.vComments.length > 0)
+      const commentInner = vulogOverlayGlobal.drawCommentsSection(item, purl, { hlightId: item.id })
+      return dg.div(dg.div({
+        style: { color: 'blue', width: '100%', 'text-align': 'right', cursor: 'pointer', display: (hasAnnotations ? 'none' : 'block') },
+        onclick: function (e) {
+          e.target.nextSibling.style.display = 'block'
+          e.target.style.display = 'none'
+        }
+      },
+      '+ Annotate '),
+      dg.div({
+        style: { 'margin-left': '50px', 'margin-top': '4px', border: '1px solid lightgrey', 'border-radius': '3px', background: 'white', display: (hasAnnotations ? 'block' : 'none') }
+      }, commentInner))
     }
     return dg.div({ className: 'quote_outer' },
       dg.span({ className: 'quote_left' }),
@@ -422,7 +411,9 @@ var lister = {
         style: { 'background-color': ((item.color && COLOR_MAP[item.color]) ? COLOR_MAP[item.color] : 'yellowgreen') }
       },
       dg.span(item.string),
-      displayErr),
+      displayErrDiv,
+      commentSection()
+      ),
       dg.span({ className: 'quote_right' }),
       deleter
     )
@@ -520,7 +511,6 @@ var lister = {
     const list = (['messages', 'sentMsgs'].includes(tabName)) ? tabName : 'marks'
 
     const searchCallback = function (response) {
-      //onsole.log('searchCallback', response)
       const mainDiv = dg.el('vulog_' + tabName + '_records', { clear: true })
       if (!response || !response.success) {
         console.warn('Something went wrong. Sorry. Please do try again.', response)
@@ -548,10 +538,10 @@ var lister = {
 
     if (list === 'sentMsgs') {
       var params = { app_table: 'dev.ceps.messages.sent', count: SEARCH_COUNT, appToken: freezrMeta.appToken, q: { app_id: 'com.salmanff.vulog' } }
-      if (queryParams.skip) params.skip = queryparams.skip
+      if (queryParams.skip) params.skip = queryParams.skip
       // console.log - need to add more sophisticated earch here for msgs and others
       freezr.feps.postquery(params, (error, response) => {
-        searchCallback({results: response, success: (!error), error})
+        searchCallback({ results: response, success: (!error), error })
       })
     } else {
       chrome.runtime.sendMessage({ msg: 'searchLocally', list, queryParams }, searchCallback)

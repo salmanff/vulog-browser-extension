@@ -3,7 +3,8 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <link href="/static/popup.css" rel="stylesheet">
+    <link href="/main/popUpChromeExt.css" rel="stylesheet">
+    <link href="/sharedIosResources/highlightChangeOverlay.css" rel="stylesheet">
     <link rel="stylesheet" href="/static/font-awesome.min.css">
 </head>
 <body>
@@ -35,8 +36,8 @@
           <div id = "shareOptions" style="display:none" >DIV FOR SHARING</div>
 
 
-          <div class="vulog_title_subtle"><span class="fa fa-sticky-note littlestars unchosen-star"></span>Notes</div>
-          <div id="idNotesBox" class="inputBox" contenteditable="true" data-placeholder=" &nbsp; Enter your notes related to this web page, here."></div>
+          <div class="vulog_title_subtle"><span class="fa fa-sticky-note littlestars unchosen-star"></span>Annotations</div>
+          <div id="annotations"></div>
 
           <div id='therest' style="margin-left:5px">
 
@@ -156,23 +157,34 @@
             </div>
             <br/>
 
+            <div>
+                <br/>
+                <div>Add a default hashtag to all new bookmarks</div>
+                <div class="inputBox" id="defaultHashtagDiv" contenteditable="true"></div>
+                <br/>
+            </div>
+          </div>
+          <br/>
+
         </div>
     </div>
 
 
-    <script src="/scripts/manifest.js"></script>
-    <script src="/freezr/freezr_app_init.js"></script>
-    <script src="/freezr/freezr_core.js"></script>
-    <script src="/freezr/freezr_app_post_scripts.js"></script>
+        <script src="/sharedIosResources/manifest.js"></script>
+        <script src="/freezr/freezr_app_init.js"></script>
+        <script src="/freezr/freezr_core.js"></script>
+        <script src="/freezr/freezr_app_post_scripts.js"></script>
 
-    <script src="/freezr/jlos-frozen.js"></script>
-    <script src="/scripts/draw/dgelements.js"></script>
-    <script src="/scripts/draw/utils.js"></script>
-    <script src="/scripts/draw/trackers.js"></script>
-    <script src="/scripts/draw/sharing.js"></script>
-    <script src="/scripts/draw/lister.js"></script>
-    <script src="/scripts/draw/history.js"></script>
-    <script src="/scripts/popup.js"></script>
+        <script src="/freezr/jlos-frozen.js"></script>
+        <script src="/main/draw/dgelements.js"></script>
+        <script src="/main/draw/drawutils.js"></script>
+        <script src="/main/draw/trackers.js"></script>
+        <script src="/main/draw/sharing.js"></script>
+        <script src="/main/draw/lister.js"></script>
+        <script src="/main/draw/history.js"></script>
+        <script src="/main/popUpChromeExt.js"></script>
+        <script src="/sharedIosResources/utils.js"></script>
+        <script src="/sharedIosResources/highlightChangeOverlay.js"></script>
     </div>
 </body>
 </html>

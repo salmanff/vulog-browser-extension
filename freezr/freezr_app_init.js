@@ -1,3 +1,4 @@
+// freezr_app_init.js
 
 /* items to replace in freezr: freezr_app_name, freezr_app_display_name, freezr_app_version
   freezr_app_token, freezr_user_id, freezr_server_address

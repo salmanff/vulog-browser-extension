@@ -60,7 +60,7 @@ const history = {
     )
     if (results && results.length > 0) {
       results.forEach(alog => {
-        const thisdate = new Date(alog.vulog_timestamp).toDateString()
+        const thisdate = new Date(alog.vCreated).toDateString()
         if (thisdate !== recentdate) {
           recentdate = thisdate
           resultsdiv.appendChild(
@@ -103,7 +103,7 @@ const history = {
     const itemdiv = dg.div({ style: { 'margin-top': '10px' } })
 
     // Top line
-    let timeString = (new Date(alog.vulog_timestamp).toTimeString()).split(':')
+    let timeString = (new Date(alog.vCreated).toTimeString()).split(':')
     timeString = timeString[0] + ':' + timeString[1]
     itemdiv.appendChild(dg.span(
       dg.span({
@@ -147,7 +147,7 @@ const history = {
         href: alog.url,
         target: '_blank'
       },
-      (alog.title ? (alog.domain_app + ' - ' + alog.title) : alog.url)
+      (alog.title ? (alog.domainApp + ' - ' + alog.title) : alog.url)
       )
     ))
     itemdiv.appendChild(this.drawDetailHeader(alog))

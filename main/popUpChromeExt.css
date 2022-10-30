@@ -1,8 +1,7 @@
-/*
-    vulog_popup.css
-    vulog brownser extension pop up
-    version 0.0.2 - march 2020
-*/
+/* Overlay.css for vulog  ios and browser extension*/
+
+/* For Vulog browser */
+
 body {
   font-family: "Lucida Sans Unicode", "Helvetica Neue", "Arial", sans-serif;
   margin:0;
@@ -48,7 +47,6 @@ a {
     margin-right: 20px;
     color:yellowgreen;
 }
-
 .top_menu_item {
     padding-left: 10px;
     padding-right: 10px;
@@ -136,7 +134,6 @@ a {
   border:1px solid lightgrey;
   border-radius : 3px;
 }
-
 .page_title{
     padding-left: 60px;
     font-weight: bold;
@@ -177,7 +174,6 @@ a {
 .shareError {
   border: 2px solid orange;
 }
-
 /* Highlights - quotes*/
 #highlights_area{
   text-align:left;
@@ -233,7 +229,6 @@ a {
   vertical-align: top;
   cursor: pointer;
 }
-
 .quote_display_err {
   color:yellow;
   font-size:11px;
@@ -257,7 +252,6 @@ a {
   border:1px red solid;
   cursor:pointer;
 }
-
 .note_left {
   vertical-align: top;
 }
@@ -277,18 +271,17 @@ a {
   color:yellowgreen;
   text-align: left;
 }
+.note_inner:empty:before {
+    content: attr(data-placeholder);
+    color: lightgrey;
+    font-weight: normal;
+}
 .noteEditable {
   border-radius: 3px;
   border: 1px solid lightgrey;
   -webkit-user-modify: read-write;
   cursor: text;
 }
-.note_inner:empty:before {
-    content: attr(data-placeholder);
-    color: lightgrey;
-    font-weight: normal;
-}
-
 /* marks tab and history */
 #vulog_bookmarks_records, #vulog_inbox_records {
   font-size:18px;
@@ -361,16 +354,14 @@ a {
     text-align: left;
     cursor: text;
 }
-#idNotesBox {
-  margin-top:5px;
-  min-height:80px;
-  width:490px;
-  margin-left:20px;
-}
 .inputBox:empty:before {
     content: attr(data-placeholder);
     color: darkgrey;
     font-weight: normal;
+}
+#defaultHashtagDiv {
+  width: 250px;
+  margin-top: 5px;
 }
 .cepsbutton {
   border: 1px solid lightgrey;
@@ -445,8 +436,6 @@ a {
     font-size: 10px;
     vertical-align: top;
     padding-bottom: 3px;
-}
-.vulog_Hdetails {
     padding-left: 70px;
     margin-top: -20px;
 }
@@ -560,7 +549,6 @@ a {
 .small_space{
   margin-top:3px;
 }
-
 /* more tab */
 .topBut_Mobile {
     cursor: pointer;
@@ -572,7 +560,6 @@ a {
     padding: 5px;
     border-radius: 14px;
 }
-
 .more_tab_butt_text {
     color: #2060ff;
     cursor:pointer;
@@ -612,4 +599,105 @@ a {
 }
 .warnOnFullPage {
     margin-top: 40px;
+}
+
+/* used on boath may be */
+
+#vulog_overlay_outer {
+  font-family: "Lucida Sans Unicode", "Helvetica Neue", "Arial", sans-serif;
+  position:fixed;
+  font-size:12px;
+  top:5px;
+  right:5px;
+  color:yellowgreen;
+  background-color: white;
+  border-radius: 5px;
+  border: 2px double yellowgreen;
+  height: fit-content;
+  max-height:80%;
+  overflow: scroll;
+  width:200px;
+  z-index:999990;
+  padding:5px;
+  cursor: crosshair;
+}
+.vulog_overlay_stars {
+  width:30px;
+  height:30px;
+  margin-right:20px;
+  cursor:pointer;
+  display:inline-block;
+}
+
+
+
+/* iOS and Non iOs */
+
+#vulog_overlay_savenotes {
+  width:100%;
+  text-align:center;
+  font-size: 10px;
+}
+.vulog_overlay_grey{
+  color:grey;
+}
+.vulog_overlay_green{
+  color:yellowgreen;
+  cursor: pointer;
+}
+.vulog_overlay_butt{
+  text-align: center;
+  cursor: pointer;
+  border-radius:3px;
+  border:1px solid yellowgreen;
+  background-color: whitesmoke;
+  margin:5px;
+  margin-bottom: 20px;
+  padding:3px;
+  line-height: normal;
+  overflow: hidden;
+  font-weight: normal;
+}
+.normheight {
+  line-height: normal;
+}
+.boldtext {
+  font-weight: bold;
+}
+#vulog_overlay_errMsg {
+  font-family: "Lucida Sans Unicode", "Helvetica Neue", "Arial", sans-serif;
+  font-size:14px;
+  color:indianred;
+  text-emphasis: bold;
+}
+.vulog_overlay_titles{
+  margin-top:10px;
+  font-size:8px;
+  cursor:pointer;
+}
+.vulogAddToInboxConfirm {
+  position:absolute;
+  width:150px;
+  min-width:150px;
+  background-color: white;
+  border: 1px solid yellowgreen;
+  border-radius: 3px;
+  text-align: center;
+  z-index:99999;
+  padding-top: 20px;
+}
+.vulog_colorAreaDiv {
+  border: 1px solid lightgrey;
+  border-radius : 5px;
+  margin-left:15px;
+  margin-right:15px;
+  text-align: center;
+  height: 22px;
+}
+.vulog_colorPalletteChoice {
+  width:18px;
+  height : 18px;
+  cursor :pointer;
+  display: inline-block;
+  margin: 0px;
 }

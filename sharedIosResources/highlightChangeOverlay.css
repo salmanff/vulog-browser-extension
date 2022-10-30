@@ -1,0 +1,123 @@
+
+/* highlightChangeOverlay.css -> FOR Chrome and ios dialogue when click on highlight  */
+
+#vulog_highlighter_outer{
+  font-size:12px;
+  position:absolute;
+  background-color: transparent;
+  height: 40px;
+  width:40px;
+  z-index:999990;
+  padding:0;
+  text-align: center;
+}
+#vulog_changeHighlight_outer {
+  font-family: "Lucida Sans Unicode", "Helvetica Neue", "Arial", sans-serif;
+  font-size:12px;
+  position:absolute;
+  background-color: white;
+  opacity: 95%;
+  width: 200px;
+  z-index:999990;
+  padding:0;
+  text-align: center;
+  padding: 5px;
+  padding-top: 20px;
+  border-width: 1px;
+  border-style: solid;
+  border-color: yellowgreen;
+  border-radius: 3px;
+}
+.vulogIos_pallette_area, #vulogIos_pallette_area_for_change {
+  border-width: 1px;
+  border-style: solid;
+  border-color: lightgrey;
+  opacity: 80%;
+  border-radius : 5px;
+  z-index:999990;
+  text-align: center;
+  margin-top: 20px;
+  margin: 0;
+  padding: 0;
+  background-color: white;
+}
+.vulogIos_pallette_area {
+  position:absolute;
+}
+.vulogIos_pallette_area_for_change {
+  margin-bottom: 20px;
+}
+.vulog_inner_butt_img {
+  width: 20px;
+}
+#ios_vulog_colorAreaDiv {
+    height: 50px;
+}
+.vulog_notes {
+  min-height: 36px;
+  font-size: 14px;
+}
+
+.vulog_overlay_input{
+  border-width: 2px;
+  border-style: solid;
+  border-color: lightgrey;
+  border-radius: 2px;
+  width:90%;
+  min-height: 12px;
+  max-height:40%
+  overflow:scroll;
+  text-align: left;
+  background-color: white;
+  color: black;
+  padding: 3px;
+}
+.vulog_overlay_input[placeholder]:empty:before {
+    content: attr(placeholder);
+    color: darkgray;
+}
+.vulog_dialogue_butts {
+  width: 80%;
+  border-width: 2px;
+  border-style: solid;
+  border-color: lightgrey;
+  border-radius: 10px;
+  text-align: center;
+  padding: 2px;
+  margin-left: 20px;
+  margin-right: 20px;
+  margin-top: 5px;
+  margin-bottom: 20px;
+  color: lightgrey;
+}
+.bluecol {
+  border-color: blue;
+  color: blue;
+  cursor: pointer;
+}
+.redcol {
+  border-color: red;
+  color: red;
+  cursor: pointer;
+}
+.hlightComment::after {
+  content:"📝";
+  color: white;
+  font-size: 80%;
+  vertical-align: top;
+}
+#ios_vulog_colorAreaDiv {
+    height: 50px;
+}
+#vulog_hlight_notes {
+  min-height: 36px;
+  font-size: 18px;
+}
+.ios_vulog_colorPalletteChoice, .ios_vulog_colorChange {
+  width:40px;
+  height : 40px;
+  cursor :pointer;
+  display: inline-block;
+  margin: 5px;
+  border-radius: 10px;
+}

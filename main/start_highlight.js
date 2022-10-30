@@ -1,6 +1,6 @@
 // Highligher FUNCTIONS from github.com/jeromepl/highlighter
 
-/* global parsedPage, chrome, highlightFromSelection */
+/* global parsedPage, chrome, highlightFromSelection, newHlightIdentifier, vulogOverlayGlobal */
 
 'use strict'
 
@@ -21,21 +21,22 @@ if (selectionString) {
 
   // onsole.log("Vu-highlights storing...: ",selection," from ",window.location.pathname)
   const theHighlight = {
-    h_date: new Date().getTime(),
+    vCreated: new Date().getTime(),
     string: selection.toString(),
     container: getQuery(container),
     anchorNode: getQuery(selection.anchorNode, 'anchorNode'), // start of selection
     anchorOffset: selection.anchorOffset,
     focusNode: getQuery(selection.focusNode, 'focusnode'), // end of selection
     focusOffset: selection.focusOffset,
+    id: newHlightIdentifier()
   }
   chrome.runtime.sendMessage({ purl: parsedPage.props.purl, highlight: theHighlight, msg: 'newHighlight' },
     function (resp) {
       if (!resp || resp.error) console.warn('Error sending info to background ', parsedPage, resp)
 
-      //console.log('got a resp color ',resp.color)
-      let color = resp.color || 'yellowgreen' // todo: Get from preferences
-      highlightFromSelection(selectionString, container, selection, color)
+      theHighlight.color = resp.color || 'yellowgreen' // todo: Get from preferences
+      highlightFromSelection(theHighlight, selection, container)
+      vulogOverlayGlobal.self_mark.vHighlights.push(theHighlight)
     }
   )
 }

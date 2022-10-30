@@ -1,9 +1,12 @@
+// highlight.js
+// Compare iosApp vs ChromeExtension  - verified against iosApp 2022-10
+
 // Highligher FUNCTIONS from github.com/jeromepl/highlighter
 // Pick a combination of characters that should (almost) never occur
 
-/* global Node, vulogOverlayGlobal */
+/* global Node, vulogOverlayGlobal, showVulogOverlay, mapColor */
 
-/* exported setHighlightsToColor, highlightFromSelection */
+/* export highlightFromSelection(), setHighlightsToColor() */
 
 var DELIMITERS = {
   start: '~|:;',
@@ -12,9 +15,9 @@ var DELIMITERS = {
 
 var HIGHLIGHT_CLASS = 'VULOG--highlighter--highlighted'
 
-function getReplacements (color) {
+function getReplacements (color, id, hasComment) {
   return {
-    start: '<span class="' + HIGHLIGHT_CLASS + '" style="background-color: ' + color + ';">',
+    start: '<span id="vulog_hlight_' + id + '" class="' + HIGHLIGHT_CLASS + (hasComment ? ' hlightComment' : '') + '" style="background-color: ' + color + ';">',
     end: '</span>'
   }
 }
@@ -40,7 +43,13 @@ function resetVars () {
   charsHighlighted = 0
 }
 
-const highlightFromSelection = function (selString, container, selection, color) {
+const highlightFromSelection = function (highlightObj, selection, container) {
+  const selString = highlightObj.string
+  const color = mapColor(highlightObj.color)
+  const id = highlightObj.id
+  const hasComment = (highlightObj.vComments && highlightObj.vComments.length > 0)
+  // onsole.log('will highlight now string ', selString, ' with color ', color, { vulogOverlayGlobal })
+
   if (!vulogOverlayGlobal.shown_highlight || vulogOverlayGlobal.shown_highlight === 'self' || vulogOverlayGlobal.shown_highlight === 'self_mark') {
     // todo - why should 'self' be in above - self_mark shoudl suffice - todo clean logic
     resetVars()
@@ -65,8 +74,8 @@ const highlightFromSelection = function (selString, container, selection, color)
 
     // Step 1 + 2:
     recursiveWrapper(container)
-    color = color || 'yellowgreen'
-    var replacements = getReplacements(color)
+    // color = color || 'yellowgreen'
+    var replacements = getReplacements(color, id, hasComment)
 
     // Step 3:
     // Either highlight, or un-highlight the selection
@@ -93,7 +102,7 @@ const highlightFromSelection = function (selString, container, selection, color)
 
     return true // No errors. 'undefined' is returned by default if any error occurs during this method's execution, like if 'content.replace' fails by 'content' being 'undefined'
   } else {
-    showVulogOverlay('Press on the "show Your Own Highlights" button to be able tadd new highlights')
+    showVulogOverlay('Press on the "show Your Own Highlights" button to be able to add new highlights')
     return false
   }
 }
@@ -155,13 +164,13 @@ function recursiveWrapper (container) {
 }
 
 const setHighlightsToColor = function (colorOrInherit) {
+  console.error('snbh - this is no longer being used. or is it?')
   Array.from(document.getElementsByClassName(HIGHLIGHT_CLASS)).forEach((ahigh) => {
     ahigh.style['background-color'] = colorOrInherit || 'inherit'
   })
 }
 
 /** UTILS **/
-
 // Escape Regex special characters
 function escapeRegex (text) {
   return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')

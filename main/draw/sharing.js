@@ -466,8 +466,8 @@ const sharing = {
         callback(null, response[0])
       } else {
         const convertLogToMark = function (logtomark) {
-          const newmark = { vulog_mark_tags: [], vulog_highlights: [], vulog_mark_notes: '', vulog_mark_stars: [] }
-          const toTransfer = ['url', 'purl', 'description', 'domain_app', 'title', 'author', 'image', 'keywords', 'type', 'vulog_favIconUrl', 'vulog_kword2', 'vulog_timestamp']
+          const newmark = { vulog_mark_tags: [], vHighlights: [], vNote: '', vStars: [] }
+          const toTransfer = ['url', 'purl', 'description', 'domainApp', 'title', 'author', 'image', 'keywords', 'type', 'vulog_favIconUrl', 'vSearchWords', 'vCreated']
           toTransfer.forEach((item) => {
             if (logtomark[item]) {
               newmark[item] = JSON.parse(JSON.stringify(logtomark[item]))

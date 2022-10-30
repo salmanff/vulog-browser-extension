@@ -1,3 +1,8 @@
+/*
+To review and delete unused parts (2022-10)
+*/
+
+
 // test if works
 // get messages in background and add them to main record and calculate time
 // add time to pop up and check time...

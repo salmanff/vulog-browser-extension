@@ -1,0 +1,46 @@
+:root {
+    color-scheme: light dark;
+}
+
+body {
+    width: 100%;
+    padding: 10px;
+
+    font-family: system-ui;
+    text-align: center;
+}
+
+@media (prefers-color-scheme: dark) {
+    /* Dark Mode styles go here. */
+}
+
+.notes {
+  width:90%;
+  min-height:20px;
+  background-color: white;
+  padding:3px;
+  color:yellowgreen;
+  text-align: left;
+
+  border-radius: 3px;
+  border: 1px solid lightgrey;
+  -webkit-user-modify: read-write;
+}
+.notes:empty:before {
+    content: attr(data-placeholder);
+    color: lightgrey;
+    font-weight: normal;
+}
+
+#outer {
+    display: block;
+    width: 100%;
+    margin: 0;
+    padding:0;
+}
+
+.starButt {
+    width: 40px;
+    margin:20px;
+    margin-right: 50px;
+}

@@ -26,12 +26,13 @@ var tabinfo = {}
 var currentHColor = 'green'
 var marks = { current: null }
 var editMode = false
+const vulogOverlayGlobal = {}
 
 if (navigator.platform.toUpperCase().indexOf('MAC') >= 0) dg.el('topBar').style.height = '30px'
 
 freezrMeta.initialize('com.salmanff.vulog')
 
-const isPopUp = (window.location.pathname !== '/static/viewintab.html')
+const isPopUp = (window.location.pathname !== '/main/viewintab.html')
 var thisTab = null
 
 var opentab = function (tabName, options = {}) {
@@ -144,7 +145,6 @@ if (isPopUp) {
   document.addEventListener('DOMContentLoaded', (evt) => {
     let theTab = lister.loadUrlParams(dg.el('idSearchMarksBox'))
     chrome.runtime.sendMessage({ msg: 'getFreezrmeta' }, function (response) {
-      // onsole.log('getFreezrmeta', response)
       if (response && response.success) {
         freezrMeta.set(response.freezrMeta)
       } else {
@@ -169,7 +169,6 @@ const drawCurrentTabForPopUp = function () {
   const purl = tabinfo.purl
   setTimeout(function () {
     chrome.runtime.sendMessage({ msg: 'getPageData', purl: purl, tabinfo: tabinfo }, function (response) {
-      // onsole.log('getPageData', response.details)
       if (response && response.success) {
         currentLog = response.details.currentLog
         marks.current = response.details.current_mark
@@ -179,13 +178,13 @@ const drawCurrentTabForPopUp = function () {
         setofflineCredentialsto(response.details.offlineCredentialsExpired)
         recordingPaused = response.details.pause_vulog
         currentHColor = response.hcolor
+
         // onsole.log('current.mark:',marks.current )
 
         editMode = response.details.edit_mode
 
         // if (!freezrMeta.appToken) dg.showEl('notloggedinmsg')
         if (response.details.syncErr) showWarning('There was an error syncing. ', response.details.syncErr)
-        if (response.details.syncErr) console.log('need to handle sync err messaging better')
         if (response.details.deleted_unbackedupdata) {
           showWarning('Some of your logged items were deleted! Please do find a Personal Data Store to be able to keep mroe data, as the web browser doesnt have any more space.', 10000)
         }
@@ -198,7 +197,7 @@ const drawCurrentTabForPopUp = function () {
             dg.el('thisPage_details').appendChild(dg.div(
               dg.div({ style: { 'font-size': '14px', 'font-weight': 'bold', 'padding-top': '10px' } },
                 (currentLog.title ? currentLog.title +
-                  ((currentLog.domain_app ? (currentLog.title.toLowerCase().includes(currentLog.domain_app.toLowerCase().split('.')[0]) ? '' : (' - ' + currentLog.domain_app))
+                  ((currentLog.domainApp ? (currentLog.title.toLowerCase().includes(currentLog.domainApp.toLowerCase().split('.')[0]) ? '' : (' - ' + currentLog.domainApp))
                     : '- file')
                   )
                   : currentLog.url.split('/').join('/ '))),
@@ -252,6 +251,12 @@ const drawCurrentTabForPopUp = function () {
         } else {
           marks.current = { purl: currentLog.purl }
         }
+
+        dg.el('defaultHashtagDiv').innerText = response.defaultHashTag
+        if ((!marks.current.vNote || marks.current.vNote === '') && response.defaultHashTag && response.defaultHashTag !== '') {
+          marks.current.vNote = '#' + response.defaultHashTag + ' '
+        }
+        document.getElementById('annotations').appendChild(vulogOverlayGlobal.drawCommentsSection(marks.current, marks.current.purl, { markId: (marks.current._id || marks.current.fj_local_temp_unique_id) })) // hlighId or markId)
       } else {
         opentab('current')
         if (dg.el('userMarks_area')) dg.el('userMarks_area').style.display = 'none'
@@ -313,7 +318,7 @@ var doClick = function (args) {
         default:
           ending = '?vulogTab=bookmarks'
       }
-      chrome.tabs.create({ url: '/static/viewintab.html?' + ending })
+      chrome.tabs.create({ url: '/main/viewintab.html?' + ending })
       break
     }
     case 'logout':
@@ -345,12 +350,12 @@ document.getElementById('idSearchHistoryBox').onkeypress = function (evt) {
     // history.doSearch()
   }
 }
-if (document.getElementById('idNotesBox')) {
-  document.getElementById('idNotesBox').onkeydown = function (evt) {
-    setTimeout(function () {
-      // if (evt.keyCode === 13) evt.preventDefault()
-      saveNotesTags()
-    }, 0)
+
+if (document.getElementById('defaultHashtagDiv')) {
+  document.getElementById('defaultHashtagDiv').onkeyup = function (e) {
+    setDefaultHashtag(dg.el('defaultHashtagDiv').innerText, function (result) {
+      // onsole.log({ result })
+    })
   }
 }
 
@@ -361,7 +366,7 @@ const convertPasteToText = function (evt) {
   // setTimeout(function () { evt.target.innerText}, 5)
 }
 
-if (document.getElementById('idNotesBox')) document.getElementById('idNotesBox').onpaste = convertPasteToText
+// if (document.getElementById('idNotesBox')) document.getElementById('idNotesBox').onpaste = convertPasteToText
 
 if (document.getElementById('idSearchMarksBox')) {
   document.getElementById('idSearchMarksBox').onkeypress = function (evt) {
@@ -429,7 +434,7 @@ const switchView = function (grouptype) {
 const searchInTab = function (options) {
   if (thisTab !== 'inbox') {
     const searchBox = dg.el('idSearchMarksBox')
-    if (searchBox) lister[thisTab].searchParams.words = removeSpacesEtc(searchBox.innerText).split(' ')
+    if (searchBox && searchBox.innerText.trim()) lister[thisTab].searchParams.words = removeSpacesEtc(searchBox.innerText).split(' ')
   }
 
   lister[thisTab].pages = []
@@ -452,29 +457,29 @@ const addEmptyCurrentStars = function () {
 
 var showCurrentUserMark = function () {
   lister.updateStarsDiv(marks.current)
-  if (!marks.current.vulog_mark_notes) marks.current.vulog_mark_notes = ''
-  if (marks.current.vulog_mark_tags) marks.current.vulog_mark_notes = marks.current.vulog_mark_tags.join(' ') + '\n\n' + marks.current.vulog_mark_notes
-  if (marks.current.vulog_mark_notes) document.getElementById('idNotesBox').textContent = marks.current.vulog_mark_notes
-  if (marks.current.vulog_highlights && marks.current.vulog_highlights.length > 0) {
+  if (!marks.current.vNote) marks.current.vNote = ''
+  // if (marks.current.vulog_mark_tags) marks.current.vNote = marks.current.vulog_mark_tags.join(' ') + '\n\n' + marks.current.vNote
+  // if (marks.current.vNote) document.getElementById('idNotesBox').textContent = marks.current.vNote
+  if (marks.current.vHighlights && marks.current.vHighlights.length > 0) {
     const hlArea = dg.el('highlights_area', { show: true, clear: true })
-    marks.current.vulog_highlights.forEach((item, i) => hlArea.appendChild(lister.drawHighlight(item, { include_delete: true, show_display_errs: true })))
+    marks.current.vHighlights.forEach((item, i) => hlArea.appendChild(lister.drawHighlight(item, marks.current.purl, { include_delete: true, show_display_errs: true })))
   }
 }
 
-var saveNotesTags = function () {
-  var theNotes = document.getElementById('idNotesBox').textContent
-  if (!marks.current) marks.current = {}
-  marks.current.vulog_mark_notes = theNotes
-  chrome.runtime.sendMessage({
-    msg: 'save_notes',
-    purl: marks.current.purl || currentLog.purl,
-    id: marks.current._id,
-    notes: theNotes,
-    tabinfo: tabinfo
-  }, function (response) {
-    if (!response || response.error) showWarning((response ? response.error : null))
-  })
-}
+// var saveNotesTags = function () {
+//   var theNotes = document.getElementById('idNotesBox').textContent
+//   if (!marks.current) marks.current = {}
+//   marks.current.vNote = theNotes
+//   chrome.runtime.sendMessage({
+//     msg: 'saveMainComment',
+//     purl: marks.current.purl || currentLog.purl,
+//     id: marks.current._id,
+//     notes: theNotes,
+//     tabinfo: tabinfo
+//   }, function (response) {
+//     if (!response || response.error) showWarning((response ? response.error : null))
+//   })
+// }
 
 var showPauseGraphics = function () {
   document.getElementById('click_pause_0').className = 'fa topBut_Mobile fa-' + (recordingPaused ? 'play' : 'stop')
@@ -502,18 +507,10 @@ var showWarning = function (msg, timing) {
   }
 }
 
-const COLOR_MAP = {
-  green: 'yellowgreen',
-  yellow: 'yellow',
-  blue: 'lightskyblue',
-  pink: 'lightpink',
-  grey: 'lightgrey',
-  orange: 'lightsalmon'
-  // 'u' : 'underline'
-}
 var drawPallette = function () {
   const colorTable = dg.div({ style: { border: '1px solid lightgrey', 'background-color': 'white', 'border-radius': '1px', width: '66px', 'margin-bottom': '3px' } })
   for (var [key, value] of Object.entries(COLOR_MAP)) {
+    const thisColor = key
     colorTable.appendChild(dg.div({
       style: {
         'background-color': value,
@@ -525,7 +522,7 @@ var drawPallette = function () {
         border: ('2px solid ' + (currentHColor === key ? 'darkgrey' : 'white'))
       },
       onclick: function () {
-        setHColor(key, drawPallette)
+        setHColor(thisColor, drawPallette)
       }
     }, (key === 'u' ? 'U' : '')
     ))
@@ -544,7 +541,7 @@ var drawPallette = function () {
       style: { width: '61px', padding: '2px', margin: '2px 0px 2px 0px' },
       id: 'popUpSetEditModeButt',
       onclick: function () {
-        chrome.tabs.executeScript({ file: 'scripts/toggle_edit_mode.js' })
+        chrome.tabs.executeScript({ file: 'main/toggle_edit_mode.js' })
         chrome.runtime.sendMessage({ msg: 'set_edit_mode', set: (!editMode), purl: tabinfo.purl, tabinfo }, function (response) {
           if (response.success) {
             editMode = !editMode
@@ -562,6 +559,11 @@ var drawPallette = function () {
 var setHColor = function (hcolor, cb) {
   chrome.runtime.sendMessage({ msg: 'setHColor', hcolor, tabinfo }, function (response) {
     currentHColor = hcolor
+    cb(response)
+  })
+}
+const setDefaultHashtag = function (text, cb) {
+  chrome.runtime.sendMessage({ msg: 'setDefaultHashtag', defaultHashTag: text, tabinfo }, function (response) {
     cb(response)
   })
 }

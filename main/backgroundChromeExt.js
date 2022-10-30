@@ -9,6 +9,7 @@
 /* global chrome, fetch */ // from system
 /* global pureUrlify, domainAppFromUrl, addMetaTotags, addToListAsUniqueItems, cleanTextForEasySearch */ // from pageData.js
 /* global JLOS, jlosMarkChanged  */ // from jlos-frozen.js
+/* global mapColor  */ // from utils.js
 /* global freezr */ // from freezr_core.js
 /* global freezrMeta  */ // from freezr_app_init
 
@@ -32,6 +33,23 @@ const ICON_PATHS = {
 console.log('re-initializing vulog')
 chrome.storage.local.getBytesInUse(['vulogCopy'], function (bytes) { console.log('Used bytes: ' + bytes) })
 
+const vp5Tranformmark = function (item) {
+  const v2Translations = {
+    domain_app: 'domainApp',
+    vulog_timestamp: 'vCreated',
+    vulog_highlights: 'vHighlights',
+    vulog_mark_notes: 'vNote',
+    vulog_mark_stars: 'vStars',
+    vulog_kword2: 'vSearchWords',
+    vulog_source: 'vSource'
+  }
+  for (const [oldKey, newKey] of Object.entries(v2Translations)) {
+    if (item[oldKey]) item[newKey] = item[oldKey]
+    delete item[oldKey]
+  }
+  return item
+}
+
 const vulog = new JLOS('vulog', { saver: 'nosave', numItemsToFetchOnStart: 50 })
 // Get locally stored copy of vulog from chrome local storage
 chrome.storage.local.get('vulogCopy', function (items) {
@@ -48,7 +66,8 @@ chrome.storage.local.get('vulogCopy', function (items) {
       pause_vulog: true
     }
   }
-  vulog.data.hcolor = 'green'
+  if (!vulog.data.hColor) vulog.data.hColor = 'green'
+  if (!vulog.data.defaultHashTag) vulog.data.defaultHashTag = ''
   // onsole.log("vulog is now "+JSON.stringify(vulog.data.logs.length));
 
   freezrMeta.set(vulog.data.freezrMeta)
@@ -58,26 +77,28 @@ chrome.storage.local.get('vulogCopy', function (items) {
 chrome.contextMenus.create({ title: 'Highlight text (vulog)', onclick: highlightTextFromContext, contexts: ['selection'] })
 chrome.contextMenus.create({ title: 'Add to inbox (vulog)', onclick: AddLinkToInboxFromContext, contexts: ['link'] })
 function highlightTextFromContext () {
-  chrome.tabs.executeScript({ file: 'scripts/start_highlight.js' })
+  chrome.tabs.executeScript({ file: 'main/start_highlight.js' })
 }
-//   chrome.tabs.executeScript({ file: 'scripts/toggle_edit_mode.js' })
+//   chrome.tabs.executeScript({ file: 'main/toggle_edit_mode.js' })
 
 function AddLinkToInboxFromContext (resp) {
   // onsole.log(resp)
   const purl = pureUrlify(resp.linkUrl)
   let currentMark = vulog.queryLatest('marks', { purl })
   if (currentMark) {
-    if (!currentMark.vulog_mark_stars.includes('inbox')) currentMark.vulog_mark_stars.push('inbox')
+    if (!currentMark.vStars.includes('inbox')) currentMark.vStars.push('inbox')
     jlosMarkChanged(currentMark)
   } else {
     currentMark = {
       referrer: resp.pageUrl,
-      vulog_mark_stars: ['inbox'],
+      vStars: ['inbox'],
       purl: purl,
       url: resp.linkUrl,
-      vulog_timestamp: new Date().getTime(),
+      vCreated: new Date().getTime(),
       vulog_sub_pages: [],
-      domain_app: domainAppFromUrl(resp.linkUrl)
+      vNote: vulog.data.defaultHashTag ? ('#' + vulog.data.defaultHashTag) : null,
+      vSource: 'chrome_browser',
+      domainApp: domainAppFromUrl(resp.linkUrl)
     }
 
     fetch(resp.linkUrl).then(function (response) {
@@ -231,18 +252,21 @@ var syncMessages = function (callFwd) {
       message = JSON.parse(JSON.stringify(message))
       if (message && message.record && message.record.purl) {
         message.purl = message.record.purl
+        const msgText = message.record.vNote
+          ? message.record.vNote + ' : '
+          : (message.record.vulog_mark_notes ? message.record.vulog_mark_notes + ' : ' : '')
         // console.log todo - check if sender is a contact before notifying - also add as an option to not get notifications
         const options = {
           type: 'basic',
           iconUrl: 'vulog logo v1.png',
           title: ('A link from ' + message.sender_id + ' @ ' + message.sender_host),
-          message: (message.record.vulog_mark_notes ? (message.record.vulog_mark_notes + ' : ') : '') + message.record.title,
+          message: msgText + message.record.title,
           priority: 2
         }
         try {
           chrome.notifications.create(message._id, options) // function (ret) { console.log({ ret }) }
         } catch (e) {
-          console.warn('error creating cotification')
+          console.warn('error creating cotification', e)
         }
       }
       return message
@@ -254,7 +278,7 @@ var syncMessages = function (callFwd) {
 if (chrome.notifications) {
   chrome.notifications.onClicked.addListener(function (notifId) {
     const linkObj = vulog.get('messages', notifId)
-    const linkUrl = (linkObj && linkObj.record && linkObj.record.url) ? linkObj.record.url : '/static/viewintab.html?vulogTab=messages'
+    const linkUrl = (linkObj && linkObj.record && linkObj.record.url) ? linkObj.record.url : '/main/viewintab.html?vulogTab=messages'
     chrome.tabs.create({ url: linkUrl })
   })
 }
@@ -278,11 +302,10 @@ var checkMarks = function (callFwd) { // checks to make sure there are no confli
       } else {
         const onlineItem = returndata[0]
 
-        onlineItem.vulog_mark_stars = addToListAsUniqueItems(onlineItem.vulog_mark_stars, itemtocheck.vulog_mark_stars)
-        onlineItem.vulog_mark_tags = addToListAsUniqueItems(onlineItem.vulog_mark_tags, itemtocheck.vulog_mark_tags)
-        if (itemtocheck.vulog_mark_notes) onlineItem.vulog_mark_notes += (' ' + itemtocheck.vulog_mark_notes)
-        onlineItem.vulog_highlights = onlineItem.vulog_highlights || []
-        if (itemtocheck.vulog_highlights) onlineItem.vulog_highlights = [...onlineItem.vulog_highlights, ...itemtocheck.vulog_highlights]
+        onlineItem.vStars = addToListAsUniqueItems(onlineItem.vStars, itemtocheck.vStars)
+        if (itemtocheck.vNote) onlineItem.vNote += (' ' + itemtocheck.vNote)
+        onlineItem.vHighlights = onlineItem.vHighlights || []
+        if (itemtocheck.vHighlights) onlineItem.vHighlights = [...onlineItem.vHighlights, ...itemtocheck.vHighlights]
         jlosMarkChanged(onlineItem)
         vulog.data.marks[idx] = onlineItem
 
@@ -293,7 +316,11 @@ var checkMarks = function (callFwd) { // checks to make sure there are no confli
 }
 var syncMarks = function (callFwd) {
   // onsole.log('syncMarks')
-  vulog.sync('marks', { handleConflictedItem: handleConflictedItem, endCallBack: function () { syncLogs(callFwd) } })
+  vulog.sync('marks', {
+    handleConflictedItem: handleConflictedItem,
+    downloadedItemTransform: vp5Tranformmark,
+    endCallBack: function () { syncLogs(callFwd) }
+  })
 }
 const handleConflictedItem = function (onlineItem, storedLocalitem) {
   console.warn('handleConflictedItem: Syncing conflict arised in syncing at' + new Date())
@@ -342,7 +369,7 @@ requestApi.newpage = function (request, sender, sendResponse) {
       iconpath = (currentMark ? ICON_PATHS.red : ICON_PATHS.norm)
 
       const possibleMaster = getMasterPage(sender.tab.id, request.props.purl)
-      const timeFromLastLoad = possibleMaster ? (new Date().getTime() - (possibleMaster.vulog_timestamp || 0)) : null
+      const timeFromLastLoad = possibleMaster ? (new Date().getTime() - (possibleMaster.vCreated || 0)) : null
       const createNewLogRecord = (!possibleMaster || timeFromLastLoad > (24 * 60 * 60 * 1000)) // 1 day
       if (createNewLogRecord) vulog.add('logs', request.props)
     }
@@ -356,8 +383,8 @@ requestApi.newpage = function (request, sender, sendResponse) {
     // if (!request.props.isiframe) console.warn("subpage not iframe")
     pageInRAM = logDetailsInRAM[sender.tab.id]
     if (pageInRAM && (pageInRAM.purl === pureUrlify(sender.tab.url) || pageInRAM.purl === pureUrlify(request.props.referrer) || pageInRAM.purl === pureUrlify(sender.tab.pendingUrl))) {
-      request.props.vulog_visits = [request.props.vulog_timestamp]
-      pageInRAM.vulog_sub_pages = addNonduplicateObject(pageInRAM.vulog_sub_pages, request.props, ['vulog_timestamp', 'vulog_visits'], true)
+      request.props.vulog_visits = [request.props.vCreated]
+      pageInRAM.vulog_sub_pages = addNonduplicateObject(pageInRAM.vulog_sub_pages, request.props, ['vCreated', 'vulog_visits'], true)
       pageInRAM.vulog_sub_cookies = addToListAsUniqueItems(pageInRAM.vulog_sub_cookies, request.props.vulog_cookies)
       if (!pageInRAM.vulog_3rdParties) pageInRAM.vulog_3rdParties = { js: [], img: [] }
       if (request.props.vulog_3rdParties && request.props.vulog_3rdParties.js) {
@@ -404,8 +431,8 @@ requestApi.updatepage = function (request, sender, sendResponse) {
     // onsole.log('sub opage update  on subpage',pageInRAM,request)
     if (pageInRAM && pageInRAM.purl === pureUrlify(sender.tab.url)) {
       // Add vukog_3rd_parties too
-      request.props.vulog_visits = [request.props.vulog_timestamp]
-      pageInRAM.vulog_sub_pages = addNonduplicateObject(pageInRAM.vulog_sub_pages, request.props, ['vulog_timestamp', 'vulog_visits'], true)
+      request.props.vulog_visits = [request.props.vCreated]
+      pageInRAM.vulog_sub_pages = addNonduplicateObject(pageInRAM.vulog_sub_pages, request.props, ['vCreated', 'vulog_visits'], true)
       pageInRAM.vulog_sub_cookies = addToListAsUniqueItems(pageInRAM.vulog_sub_cookies, request.props.vulog_cookies)
       pageInRAM.vulog_hidden_subcees = (pageInRAM.vulog_hidden_subcees || 0) + (request.props.vulog_hidden_cees ? 1 : 0)
       sendResponse({ success: true })
@@ -443,14 +470,14 @@ requestApi.searchLocally = function (request, sender, sendResponse) {
         if (params.words && params.words.length > 0) {
           var gotHit = true
           for (let j = 0; j < params.words.length; j++) {
-            if (typeof innerLog.vulog_kword2 === 'string') {
+            if (typeof innerLog.vSearchWords === 'string') {
               console.warn('aLog stillhas string keyword', innerLog) // temp bug fix
-              innerLog.vulog_kword2 = innerLog.vulog_kword2.split(' ')
+              innerLog.vSearchWords = innerLog.vSearchWords.split(' ')
             }
             if (gotHit &&
-                (innerLog.vulog_kword2 &&
-                 innerLog.vulog_kword2.length > 0 &&
-                 innerLog.vulog_kword2.join(' ').toLowerCase().indexOf(params.words[j]) >= 0
+                (innerLog.vSearchWords &&
+                 innerLog.vSearchWords.length > 0 &&
+                 innerLog.vSearchWords.join(' ').toLowerCase().indexOf(params.words[j]) >= 0
                 )
             ) {
               // do nothing - onsole.log("got hit for "+params.words[j])
@@ -461,10 +488,10 @@ requestApi.searchLocally = function (request, sender, sendResponse) {
         } else if (!params.words || params.words.length === 0) {
           gotHit = true
         }
-        if (gotHit && params.star_filters && !wordsInList1InList2(params.star_filters, innerLog.vulog_mark_stars)) gotHit = false
+        if (gotHit && params.star_filters && !wordsInList1InList2(params.star_filters, innerLog.vStars)) gotHit = false
         if (gotHit && params.exstar_filters && params.exstar_filters.length > 0) {
           params.exstar_filters.forEach(exstar => {
-            if (innerLog.vulog_mark_stars.indexOf(exstar) >= 0) gotHit = false
+            if (innerLog.vStars.indexOf(exstar) >= 0) gotHit = false
           })
         }
 
@@ -474,7 +501,7 @@ requestApi.searchLocally = function (request, sender, sendResponse) {
   }
   // onsole.log({results})
 
-  sendResponse({ success: true, results: results, nomore: (currentItem <= 0) })
+  sendResponse({ success: true, results, nomore: (currentItem <= 0) })
   // ie {success:true, results:results, nomore: currentItem==0}
 }
 requestApi.trySyncing = function (request, sender, sendResponse) {
@@ -572,7 +599,7 @@ requestApi.getPageData = function (request, sender, sendResponse) {
 
     details.edit_mode = getEditMode(((request.tabinfo && request.tabinfo.tabid) ? request.tabinfo.tabid : null), request.purl)
   }
-  sendResponse({ details: details, hcolor: vulog.data.hcolor, success: true, fatalErrors })
+  sendResponse({ details: details, hcolor: vulog.data.hColor, defaultHashTag: vulog.data.defaultHashTag, success: true, fatalErrors })
   trySyncing()
 }
 
@@ -744,23 +771,25 @@ const convertTabinfoToLog = function (tabinfo) {
   if (!tabinfo) return null
   // tabinfo should have purl, url and title
   tabinfo.isiframe = false
-  tabinfo.vulog_timestamp = new Date().getTime()
+  tabinfo.vCreated = new Date().getTime()
   tabinfo.fj_modified_locally = new Date().getTime()
   tabinfo.vulog_sub_pages = []
-  tabinfo.domain_app = tabinfo.url.split(':')[0] // for 'file' or 'chrome'
-  if (tabinfo.domain_app.indexOf('http') === 0) tabinfo.domain_app = domainAppFromUrl(tabinfo.url)
-  tabinfo.vulog_kword2 = addToListAsUniqueItems([], cleanTextForEasySearch((tabinfo.url + ' ' + tabinfo.title).split(' ')))
+  tabinfo.domainApp = tabinfo.url.split(':')[0] // for 'file' or 'chrome'
+  if (tabinfo.domainApp.indexOf('http') === 0) tabinfo.domainApp = domainAppFromUrl(tabinfo.url)
+  tabinfo.vSearchWords = addToListAsUniqueItems([], cleanTextForEasySearch((tabinfo.url + ' ' + tabinfo.title).split(' ')))
 
   return vulog.add('logs', tabinfo)
 }
 const convertLogToMark = function (logtomark) {
-  const newmark = { vulog_mark_tags: [], vulog_highlights: [], vulog_mark_notes: '', vulog_mark_stars: [] }
-  const ToTransfer = ['url', 'purl', 'description', 'domain_app', 'title', 'author', 'image', 'keywords', 'type', 'vulog_favIconUrl', 'vulog_kword2', 'vulog_timestamp']
+  const newmark = { vulog_mark_tags: [], vHighlights: [], vNote: '', vStars: [] }
+  const ToTransfer = ['url', 'purl', 'description', 'domainApp', 'title', 'author', 'image', 'keywords', 'type', 'vulog_favIconUrl', 'vSearchWords', 'vCreated']
   ToTransfer.forEach((item) => {
     if (logtomark[item]) {
       newmark[item] = JSON.parse(JSON.stringify(logtomark[item]))
     }
   })
+  newmark.vSource = 'chrome_browser'
+  newmark.vNote = vulog.data.defaultHashTag ? ('#' + vulog.data.defaultHashTag) : null
 
   if (!newmark.purl) throw Error('trying to convert log to mark with no purl ', logtomark)
   return vulog.add('marks', newmark)
@@ -785,14 +814,14 @@ requestApi.mark_star = function (request, sender, sendResponse) {
   } else {
     iconpath = ICON_PATHS.red
     if (request.doAdd) { //
-      currentMark.vulog_mark_stars = addNonduplicateObject(currentMark.vulog_mark_stars, request.theStar)
+      currentMark.vStars = addNonduplicateObject(currentMark.vStars, request.theStar)
       jlosMarkChanged(currentMark)
     } else { // remove
-      var starIdx = currentMark.vulog_mark_stars.indexOf(request.theStar)
-      if (starIdx > -1) currentMark.vulog_mark_stars.splice(starIdx, 1)
+      var starIdx = currentMark.vStars.indexOf(request.theStar)
+      if (starIdx > -1) currentMark.vStars.splice(starIdx, 1)
       if (hasNomarks(currentMark)) {
         iconpath = vulog.data.pause_vulog ? ICON_PATHS.paused : ICON_PATHS.norm
-        vulog.markDeleted('marks', currentMark, { idType: 'both' })
+        // vulog.markDeleted('marks', currentMark, { idType: 'both' })
       } else {
         jlosMarkChanged(currentMark)
       }
@@ -823,15 +852,18 @@ requestApi.addStarFromOverlay = function (request, sender, sendResponse) {
     // onsole.log('no currentMark - creating a blank one')
     currentMark = {
       referrer: request.referrer,
-      vulog_mark_stars: [request.theStar],
+      vStars: [request.theStar],
       purl: purl,
       url: request.linkUrl,
-      vulog_timestamp: new Date().getTime(),
+      vCreated: new Date().getTime(),
       vulog_sub_pages: [],
-      domain_app: domainAppFromUrl(request.linkUrl)
+      vSource: 'chrome_browser',
+      vNote: vulog.data.defaultHashTag ? ('#' + vulog.data.defaultHashTag) : null,
+      domainApp: domainAppFromUrl(request.linkUrl)
     }
   } else {
-    if (!currentMark.vulog_mark_stars.includes(request.theStar)) currentMark.vulog_mark_stars.push(request.theStar)
+    if (!currentMark.vStars.includes(request.theStar)) currentMark.vStars.push(request.theStar)
+    if (currentMark.vNote) currentMark.vNote = vulog.data.defaultHashTag ? ('#' + vulog.data.defaultHashTag) : null
     jlosMarkChanged(currentMark)
   }
   addToRecentMarks(currentMark)
@@ -855,78 +887,104 @@ requestApi.addStarFromOverlay = function (request, sender, sendResponse) {
 }
 const hasNomarks = function (mark) {
   return (
-    (!mark.vulog_highlights || mark.vulog_highlights.length === 0) &&
+    (!mark.vHighlights || mark.vHighlights.length === 0) &&
     (!mark.vulog_mark_tags || mark.vulog_mark_tags.length === 0) &&
-    (!mark.vulog_mark_stars || mark.vulog_mark_stars.length === 0) &&
-    (!mark.vulog_mark_notes || mark.vulog_mark_notes.length === 0)
+    (!mark.vStars || mark.vStars.length === 0) &&
+    (!mark.vNote || mark.vNote.length === 0)
   )
 }
-requestApi.save_notes = function (request, sender, sendResponse) {
+requestApi.postMainComment = function (request, sender, sendResponse) {
+  /*         msg: 'postMainComment',
+  url: purl,
+  id: options.markId,
+  theComment: theComment,
+  tabinfo: null
+  */
+  const purl = pureUrlify(request.url)
+  const [err, currentMark] = getMarkOrLog(purl, request.id)
+  if (err) {
+    console.warn(err)
+    sendResponse({ error: new Error('error getting data - please try again') })
+  } else if (!request.theComment || !request.theComment.text || !request.theComment.vCreated) {
+    console.warn('bad request theComment ', { request })
+    sendResponse({ error: new Error('bad commnets - need comment weith text and vCreawted ') })
+  } else {
+    if (!currentMark.vComments) currentMark.vComments = []
+    currentMark.vComments.push(request.theComment)
+    currentMark.vNote = ''
+    currentMark.vSearchWords = addToListAsUniqueItems(currentMark.vSearchWords, cleanTextForEasySearch(request.theComment.text))
+    setTimeout(trySyncing, 100)
+    jlosMarkChanged(currentMark)
+    sendResponse({ success: true, current_mark: currentMark })
+    addToRecentMarks(currentMark)
+    const iconpath = ICON_PATHS.red
+    const tabId = (request.tabinfo && request.tabinfo.tabid) ? request.tabinfo.tabid : ((sender && sender.tab.id) ? sender.tab.id : null)
+    chrome.browserAction.setIcon({ path: iconpath, tabId: tabId }, function () {
+      saveToChrome(true, null, 'postMainComment')
+    })
+  }
+}
+requestApi.saveMainComment = function (request, sender, sendResponse) {
   /*         chrome.runtime.sendMessage({
-      msg: "save_notes",
-      purl: marks.current.purl || currentLog.purl,
+      msg: "saveMainComment",
+      url: marks.current.purl || currentLog.purl,
       id: marks.current._id,
-      notes:theNotes,
-      tags:theTags
+      notes:theNote
   }
   */
-
-  const [err, currentMark] = getMarkOrLog(request.purl, request.id)
+  // onsole.log('saveMainComment ', { request })
+  const purl = pureUrlify(request.url)
+  const [err, currentMark] = getMarkOrLog(purl, request.id)
   if (err) {
     console.warn(err)
     sendResponse({ error: new Error('error getting data - please try again') })
   } else {
-    currentMark.vulog_mark_notes = request.notes
-    currentMark.vulog_kword2 = addToListAsUniqueItems(currentMark.vulog_kword2, cleanTextForEasySearch(request.notes))
-    setTimeout(trySyncing, 100)
-    let iconpath
-    if (hasNomarks(currentMark)) {
-      iconpath = vulog.data.pause_vulog ? ICON_PATHS.paused : ICON_PATHS.norm
-      vulog.markDeleted('marks', currentMark, { idType: 'both' })
-    } else {
-      iconpath = ICON_PATHS.red
-      jlosMarkChanged(currentMark)
-    }
-
+    currentMark.vNote = request.notes
+    const iconpath = ICON_PATHS.red
+    jlosMarkChanged(currentMark)
     sendResponse({ success: true, current_mark: currentMark })
-    addToRecentMarks(currentMark)
-    const tabId = (request.tabinfo && request.tabinfo.tabid) ? request.tabinfo.tabid : ((sender && sender.tab.id) ? sender.tab.id : null)
+    const tabId = (request.tabinfo && request.tabinfo.tabid) ? request.tabinfo.tabid : ((sender && sender.tab && sender.tab.id) ? sender.tab.id : null)
     chrome.browserAction.setIcon({ path: iconpath, tabId: tabId }, function () {
-      saveToChrome(true, null, 'save_notes')
+      saveToChrome(true, null, 'saveMainComment')
     })
   }
 }
 
-const COLOR_MAP = {
-  green: 'yellowgreen',
-  yellow: 'yellow',
-  blue: 'lightskyblue',
-  pink: 'lightpink',
-  grey: 'lightgrey',
-  orange: 'lightsalmon'
-}
-const mapColor = function (hcolor) {
-  return COLOR_MAP[hcolor] || hcolor
-}
 requestApi.setHColor = function (request, sender, sendResponse) {
-  vulog.data.hcolor = request.hcolor
-  sendResponse({ success: true })
+  // onsole.log('setting hcolor to ', request.hColor)
+  if (request.hColor) { // todo - check if hcolor is valid
+    vulog.data.hColor = request.hColor
+    sendResponse({ success: true })
+  } else {
+    sendResponse({ success: false, error: 'n hcolor sent' })
+  }
+}
+requestApi.setDefaultHashtag = function (request, sender, sendResponse) {
+  // onsole.log('setting defaultHashTag to ', request.defaultHashTag)
+  if (request.defaultHashTag) { // todo - check if hcolor is valid
+    vulog.data.defaultHashTag = request.defaultHashTag
+    sendResponse({ success: true })
+  } else {
+    sendResponse({ success: false, error: 'n defaultHashTag sent' })
+  }
 }
 
 requestApi.newHighlight = function (request, sender, sendResponse) {
-  const [err, currentMark] = getMarkOrLog(request.purl, request.id)
+  // onsole.log(' got new hlight - current color is ', vulog.data.hColor)
+  // onsole.log(' got new hlight -  request.highlight is ', request.highlight)
+  const purl = pureUrlify(request.url)
+  const [err, currentMark] = getMarkOrLog(purl, request.id)
   if (err) {
     console.warn(err)
     sendResponse(err)
   } else {
-    if (!currentMark.vulog_highlights) currentMark.vulog_highlights = []
-    request.highlight.color = vulog.data.hcolor.toString()
-    request.highlight.tester = 'recorded test'
-    currentMark.vulog_highlights.push(request.highlight)
+    if (!currentMark.vHighlights) currentMark.vHighlights = []
+    request.highlight.color = (vulog.data.hColor || 'green').toString()
+    currentMark.vHighlights.push(request.highlight)
     jlosMarkChanged(currentMark)
     addToRecentMarks(currentMark)
     setTimeout(trySyncing, 100)
-    sendResponse({ success: true, current_mark: currentMark, color: mapColor(vulog.data.hcolor) })
+    sendResponse({ success: true, current_mark: currentMark, color: mapColor(vulog.data.hColor) })
     const tabId = request.tabinfo ? request.tabinfo.tabid : ((sender.tab && sender.tab.id) ? sender.tab.id : null)
     if (tabId) {
       chrome.browserAction.setIcon({ path: ICON_PATHS.red, tabId: tabId }, function () {
@@ -935,15 +993,99 @@ requestApi.newHighlight = function (request, sender, sendResponse) {
     }
   }
 }
+requestApi.changeHlightColor = function (request, sender, sendResponse) {
+  // { msg: 'changeHlightColor', hColor, hlightId, url: window.location.href }
+  // onsole.log(' got  changeHlightColor - current color is ', vulog.data.hColor, { request })
+  const purl = pureUrlify(request.url)
+  const [err, currentMark] = getMarkOrLog(purl)
+  if (err) {
+    console.warn(err)
+    sendResponse(err)
+  } else if (!currentMark) {
+    console.error('changeHlightColor: could not fund mark for ' + purl)
+    sendResponse({ error: 'Internal error: Could not retrieve mark on changeHlightColor' })
+  } else {
+    let success = false
+    for (let i = currentMark.vHighlights.length - 1; i >= 0; --i) {
+      const ahighlight = currentMark.vHighlights[i]
+      if (request.hlightId === '' + ahighlight.id) {
+        currentMark.vHighlights[i].color = request.hColor
+        success = true
+        i = -1
+      }
+    }
+    jlosMarkChanged(currentMark)
+    setTimeout(trySyncing, 100)
+    const error = success ? '' : 'Could not find highlight'
+    sendResponse({ success, currentMark, error })
+  }
+}
+requestApi.addHLightComment = function (request, sender, sendResponse) {
+  // { msg: 'addHLightComment', hlightId, text, vCreated, url: window.location.href }
+  // onsole.log(' got  addHLightComment  ', { request })
+  const purl = pureUrlify(request.url)
+  const [err, currentMark] = getMarkOrLog(purl)
+  if (err) {
+    console.warn(err)
+    sendResponse(err)
+  } else if (!currentMark) {
+    console.error('addHLightComment: could not fund mark for ' + purl)
+    sendResponse({ error: 'Internal error: Could not retrieve mark on addHLightComment' })
+  } else {
+    let success = false
+    for (let i = currentMark.vHighlights.length - 1; i >= 0; --i) {
+      const ahighlight = currentMark.vHighlights[i]
+      if (request.hlightId === ahighlight.id) {
+        if (!currentMark.vHighlights[i].vComments) currentMark.vHighlights[i].vComments = []
+        currentMark.vHighlights[i].vComments.push({ text: request.text, vCreated: request.vCreated })
+        currentMark.vSearchWords = addToListAsUniqueItems(currentMark.vSearchWords, cleanTextForEasySearch(request.text))
+        currentMark.vHighlights[i].vNote = ''
+        success = true
+        i = -1
+      }
+    }
+    jlosMarkChanged(currentMark)
+    setTimeout(trySyncing, 100)
+    const error = success ? '' : 'Could not find highlight'
+    sendResponse({ success, currentMark, error })
+  }
+}
+requestApi.saveHlightComment = function (request, sender, sendResponse) {
+  // msg: (options.hlightId ? 'saveHlightComment' : 'saveMainComment'), url: purl, id: objId, notes: theNote
+  // onsole.log(' got  saveHlightComment  ', { request })
+  const purl = pureUrlify(request.url)
+  const [err, currentMark] = getMarkOrLog(purl)
+  if (err) {
+    console.warn(err)
+    sendResponse(err)
+  } else if (!currentMark) {
+    console.error('addHLightComment: could not fund mark for ' + purl)
+    sendResponse({ error: 'Internal error: Could not retrieve mark on addHLightComment' })
+  } else {
+    let success = false
+    for (let i = currentMark.vHighlights.length - 1; i >= 0; --i) {
+      const ahighlight = currentMark.vHighlights[i]
+      if (request.id === ahighlight.id) {
+        currentMark.vHighlights[i].vNote = request.notes
+        success = true
+        i = -1
+      }
+    }
+    jlosMarkChanged(currentMark)
+    setTimeout(trySyncing, 100)
+    const error = success ? '' : 'Could not find highlight'
+    sendResponse({ success, currentMark, error })
+  }
+}
 requestApi.copyHighlights = function (request, sender, sendResponse) {
-  // chrome.runtime.sendMessage({purl:parsedPage.props.purl, highlights:vulogOverlayGlobal.redirect_mark.vulog_highlights, msg:"copyHighlights"},
+  // chrome.runtime.sendMessage({purl:parsedPage.props.purl, highlights:vulogOverlayGlobal.redirect_mark.vHighlights, msg:"copyHighlights"},
   const [err, currentMark] = getMarkOrLog(request.purl)
   if (err) {
     console.warn(err)
     sendResponse({ error: 'error getting online data - please try again' })
   } else {
-    if (!currentMark.vulog_highlights) currentMark.vulog_highlights = []
-    request.highlights.forEach(ahigh => currentMark.vulog_highlights.push(ahigh))
+    if (!currentMark.vHighlights) currentMark.vHighlights = []
+    request.highlights.forEach(ahigh => currentMark.vHighlights.push(ahigh))
     addToRecentMarks(currentMark)
     setTimeout(trySyncing, 100)
     sendResponse({ success: true, current_mark: currentMark })
@@ -956,25 +1098,28 @@ requestApi.copyHighlights = function (request, sender, sendResponse) {
     redirectItem[sender.tab.id] = null
   }
 }
-requestApi.deleteHighlight = function (request, sender, sendResponse) {
-  // msg: "deleteHighlight", purl:marks.current.purl , h_date:hlightDate
-  const currentMark = vulog.queryLatest('marks', { purl: request.purl })
+requestApi.removeHighlight = function (request, sender, sendResponse) {
+  // should be changed to remvoe highlight and made consistent with ios
+  // { msg: 'removeHighlight', hlightId, url: window.location.href }
+  const purl = pureUrlify(request.url)
+
+  const currentMark = vulog.queryLatest('marks', { purl })
   let iconpath
   let success = false
   if (!currentMark) {
-    sendResponse({ error: 'Internal error: Could not retrieve mark on deleteHighlight' })
+    sendResponse({ error: 'Internal error: Could not retrieve mark on removeHighlight' })
   } else {
-    for (let i = currentMark.vulog_highlights.length - 1; i >= 0; --i) {
-      const ahighlight = currentMark.vulog_highlights[i]
-      if (request.h_date === '' + ahighlight.h_date) {
-        currentMark.vulog_highlights.splice(i, 1)
+    for (let i = currentMark.vHighlights.length - 1; i >= 0; --i) {
+      if (request.hlightId === currentMark.vHighlights[i].id) {
+        currentMark.vHighlights.splice(i, 1)
         success = true
         i = -1
       }
     }
     if (hasNomarks(currentMark)) {
       iconpath = vulog.data.pause_vulog ? ICON_PATHS.paused : ICON_PATHS.norm
-      vulog.markDeleted('marks', currentMark, { idType: 'both' })
+      // todo nowdo -> change logic for vulog so having nomarks doesnt delete it
+      // vulog.markDeleted('marks', currentMark, { idType: 'both' })
     } else {
       iconpath = ICON_PATHS.red
     }
@@ -984,7 +1129,7 @@ requestApi.deleteHighlight = function (request, sender, sendResponse) {
     sendResponse({ success, currentMark, error })
     const tabId = (request.tabinfo && request.tabinfo.tabid) ? request.tabinfo.tabid : ((sender && sender.tab && sender.tab.id) ? sender.tab.id : null)
     chrome.browserAction.setIcon({ path: iconpath, tabId: tabId }, function () {
-      saveToChrome(true, null, 'deleteHighlight')
+      saveToChrome(true, null, 'removeHighlight')
     })
   }
 }
@@ -1000,14 +1145,14 @@ const addToRecentMarks = function (currentMark) {
 }
 
 requestApi.getMarkFromVulog = function (request, sender, sendResponse) {
-  // onsole.log("get mark for purl ",request.purl)
+  // onsole.log('getMarkFromVulog mark for purl ', request.purl)
   // chrome.runtime.sendMessage({purl:parsedPage.props.purl, highlight:the_highlight, msg:"newHighlight"}
   request.purl = pureUrlify(request.purl)
   var currentMark = vulog.queryLatest('marks', { purl: request.purl })
-  if (currentMark && currentMark.vulog_highlights && currentMark.vulog_highlights.length > 0) {
+  if (currentMark && currentMark.vHighlights && currentMark.vHighlights.length > 0) {
     currentMark = JSON.parse(JSON.stringify(currentMark))
-    currentMark.vulog_highlights.forEach((item, i) => {
-      currentMark.vulog_highlights[i].color = mapColor(currentMark.vulog_highlights[i].color)
+    currentMark.vHighlights.forEach((item, i) => {
+      currentMark.vHighlights[i].color = mapColor(currentMark.vHighlights[i].color)
     })
   }
 
@@ -1020,16 +1165,17 @@ requestApi.getMarkFromVulog = function (request, sender, sendResponse) {
   var messages = vulog.queryObjs('messages', { purl: request.purl }, { makeCopy: true })
   if (messages && messages.length > 0) {
     for (let j = 0; j < messages.length; j++) {
-      if (messages[j].record.vulog_highlights && messages[j].record.vulog_highlights.length > 0) {
-        messages[j].record.vulog_highlights.forEach((item, i) => {
-          messages[j].record.vulog_highlights[i].color = mapColor(messages[j].record.vulog_highlights[i].color)
+      // if (messages[j].record.vHighlights && messages[j].record.vHighlights.length > 0) messages[j].record.vHighlights = messages[j].record.vHighlights // ???
+      if (messages[j].record.vHighlights && messages[j].record.vHighlights.length > 0) {
+        messages[j].record.vHighlights.forEach((item, i) => {
+          messages[j].record.vHighlights[i].color = mapColor(messages[j].record.vHighlights[i].color)
         })
       }
     }
   }
 
   const haveFreezr = (vulog.data.freezrMeta && vulog.data.freezrMeta.serverAddress) ? vulog.data.freezrMeta.serverAddress : null
-  sendResponse({ success: true, mark: currentMark, redirectedmark, messages, haveFreezr, hcolor: vulog.data.hcolor.toString() })
+  sendResponse({ success: true, mark: currentMark, redirectedmark, messages, haveFreezr, hcolor: vulog.data.hColor })
 }
 
 requestApi.marksDisplayErrs = function (request, sender, sendResponse) {
@@ -1039,7 +1185,7 @@ requestApi.marksDisplayErrs = function (request, sender, sendResponse) {
   if (!currentMark) {
     sendResponse({ error: 'Could not get mark' })
   } else {
-    request.display_errs.forEach(item => { currentMark.vulog_highlights[item.idx].display_err = item.err })
+    request.display_errs.forEach(item => { currentMark.vHighlights[item.idx].displayErr = item.err })
     sendResponse({ success: 'updated mark', new_mark: currentMark })
   }
 }
@@ -1111,7 +1257,7 @@ function addNonduplicateObject (objectList, newObject, ignorekeys = [], uglyexce
   }
   const dupl = listHasObject(objectList, newObject, ignorekeys)
   if (dupl) {
-    if (uglyexception) dupl.vulog_visits.push(newObject.vulog_timestamp) // todo abstract away to add this to vulog_sub_pages
+    if (uglyexception) dupl.vulog_visits.push(newObject.vCreated) // todo abstract away to add this to vulog_sub_pages
   } else {
     objectList.push(newObject)
   }

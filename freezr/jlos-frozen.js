@@ -1,5 +1,6 @@
-/* v2021-04 update
-JLOS - Json Local Storage
+/*
+jlos-frozen.js -  v2022-08 ADD ASYNC - Json Local Storage -
+- CHANGED 2022-10 VCTRACKR
 JLOS is a simple object for storing data in local storage, without using the filesystem for archiving data.
 JLOS-frozen has additional syncing functionality for freezr
 
@@ -18,10 +19,13 @@ Dependency: freezr_core.js
 */
 
 /* global localStorage */ // from system
-/* global freezr */ // from freezr_core.js
+/* global freezr, freepr */ // from freezr_core.js
 /* exported jlosMarkChanged */
 
 function JLOS (name, options) {
+  // options:
+  //  saver:
+  // lists
   this.name = name
   this.initialize(options)
 }
@@ -50,6 +54,12 @@ JLOS.prototype.initialize = function (options) {
   }
   this.data.fj_local_id_counter = 1
   if (!this.data.last_server_sync_time || !isNaN(this.data.last_server_sync_time)) this.data.last_server_sync_time = {}
+  if (options.lists && options.lists.length > 0) {
+    options.lists.forEach((listName) => {
+      if (!this.data[listName]) this.data[listName] = []
+      if (!this.data.last_server_sync_time[listName]) this.data.last_server_sync_time[listName] = 0
+    })
+  }
   // Fix from previous version - can be eventually removed and self.data.last_server_sync_time={} defined above
   this.save()
 }
@@ -165,7 +175,7 @@ JLOS.prototype.sync = function (theList, options) {
         queryOptions.q[key] = options.xtraQueryParams[key]
       }
     }
-    // onsole.log('syncing '+theList,queryOptions)
+
     freezr.ceps.getquery(queryOptions, function (error, returnJson) {
       if (error || returnJson.error) {
         if (!error) error = { message: returnJson.message, code: returnJson.code }
@@ -182,14 +192,15 @@ JLOS.prototype.sync = function (theList, options) {
             return obj1._date_modified - obj2._date_modified
           }
           returnJson.sort(fjReverseSort)
-
           for (var i = 0; i < returnJson.length; i++) {
             const returnItem = options.downloadedItemTransform ? options.downloadedItemTransform(returnJson[i]) : JSON.parse(JSON.stringify(returnJson[i]))
             resultIndex = self.idIndex(theList, returnItem, false)
             if (resultIndex > -1) {
               var existingItem = self.data[theList][resultIndex]
               if (existingItem._date_modified >= returnItem._date_modified) {
-                if (existingItem._date_modified > returnItem._date_modified) console.warn('SNBH - modified date greater on server?? ' + returnItem._id)
+                if (existingItem._date_modified > returnItem._date_modified) {
+                  console.warn('SNBH - modified date greater on server?? ' + returnItem._id)
+                }
               } else if (!existingItem.fj_modified_locally) { // NO Conflicts - changed on another instance of the app
                 // onsole.log('NO conflicts - update'+returnItem._id)
                 self.data[theList][resultIndex] = returnItem
@@ -244,6 +255,128 @@ JLOS.prototype.sync = function (theList, options) {
   }
 }
 
+JLOS.prototype.getNewitemsAsync = async function (theList, options) {
+  var self = this
+
+  var changedItems = []
+  var newItems = []
+  if (!options) options = {}
+  if (!options.warningCallBack) options.warningCallBack = function (msgJson) { console.log('WARNING: ' + msgJson) }
+
+  // onsole.log('startSyncItems - this.data.last_server_sync_time '+freezr.utils.longDateFormat( this.data.last_server_sync_time) )
+  if (this.syncing) {
+    console.warn('Already Syncing...')
+    return 'Could not sync - Already Syncing...'
+  } else {
+    this.syncing = true
+
+    const queryOptions = options.app_table ? { app_table: options.app_table } : { collection: theList }
+    // if (options.permissionName) queryOptions.permission_name = options.permissionName
+
+    if (options.onlyDownloadLatestItems) {
+      queryOptions.q = {}
+    } else {
+      queryOptions.q = { _date_modified: { $gt: (self.data.last_server_sync_time[theList]) || 0 } }
+      queryOptions.sort = { _date_modified: 1 }
+    }
+
+    if (options && options.xtraQueryParams) {
+      for (const key in options.xtraQueryParams) {
+        queryOptions.q[key] = options.xtraQueryParams[key]
+      }
+    }
+
+    // console.log('getNewitemsAsync ' + theList, 'sync time was ' + self.data.last_server_sync_time[theList], queryOptions)
+    // const returnJson = await freepr.ceps.getquery(queryOptions)
+    const returnJson = await freepr.feps.postquery(queryOptions)
+
+    if (returnJson.error) {
+      if (returnJson.errorCode !== 'noServer') console.warn('error syncing ', returnJson)
+      self.syncing = false
+      if (options.endCallBack) {
+        options.endCallBack(returnJson.error)
+      } else options.warningCallBack(returnJson.error)
+      return returnJson.error
+    } else {
+      var resultIndex = -1
+      let addedNew = false
+      if (returnJson && returnJson.length > 0) {
+        const fjReverseSort = function (obj1, obj2) {
+          return obj1._date_modified - obj2._date_modified
+        }
+        returnJson.sort(fjReverseSort)
+
+        for (var i = 0; i < returnJson.length; i++) {
+          const returnItem = options.downloadedItemTransform ? options.downloadedItemTransform(returnJson[i]) : JSON.parse(JSON.stringify(returnJson[i]))
+          resultIndex = self.idIndex(theList, returnItem, false)
+          if (resultIndex > -1) {
+            var existingItem = self.data[theList][resultIndex]
+            if (existingItem._date_modified >= returnItem._date_modified) {
+              if (existingItem._date_modified > returnItem._date_modified) {
+                addedNew = true
+                console.warn('SNBH - modified date greater on server?? ' + returnItem._id)
+              }
+            } else if (!existingItem.fj_modified_locally) { // NO Conflicts - changed on another instance of the app
+              // onsole.log('NO conflicts - update'+returnItem._id)
+              addedNew = true
+              self.data[theList][resultIndex] = returnItem
+              self.data[theList][resultIndex].fj_modified_locally = null
+              changedItems.push(returnItem)
+            } else { // conflict exi sts
+              addedNew = true
+              console.warn('CONFLICT dates - existing is ', existingItem, returnItem, new Date(existingItem._date_modified).toLocaleTimeString() + 'returned is' + new Date(returnItem._date_modified).toLocaleTimeString())
+
+              self.data[theList][resultIndex]._date_modified = returnItem._date_modified
+
+              if (!returnItem.fj_conflictedIds) returnItem.fj_conflictedIds = []
+              returnItem.fj_conflictedIds.push(returnItem._id)
+              delete returnItem._id
+              delete returnItem.fj_local_temp_unique_id
+              delete returnItem._date_created
+              delete returnItem._date_modified
+              returnItem.fj_modified_locally = null
+              returnItem.fj_local_temp_unique_id = self.data.fj_local_id_counter++
+
+              if (options.handleConflictedItem) {
+                options.handleConflictedItem(returnItem, self.data[theList][resultIndex])
+              } else {
+                console.warn('conflicted entries - got from server item:', returnItem, 'kept local item:', self.data[theList][resultIndex])
+              }
+            }
+          } else if (returnItem && !returnItem.fj_deleted) {
+            addedNew = true
+            returnItem.fj_modified_locally = null
+            if (!self.data[theList]) self.data[theList] = []
+            self.data[theList].push(returnItem)
+            newItems.push(returnItem)
+          } else {
+            addedNew = true
+            // onsole.log('NOT ADDDING DELETED NEW ITEM  ')
+          }
+          if (!self.data.last_server_sync_time) self.data.last_server_sync_time = {}
+          if (!self.data.last_server_sync_time[theList]) self.data.last_server_sync_time[theList] = 0
+          if (!self.data.last_server_sync_time[theList] || returnItem._date_modified > self.data.last_server_sync_time[theList]) {
+            self.data.last_server_sync_time[theList] = returnItem._date_modified
+          }
+        }
+      }
+
+      if (options.gotNewItemsCallBack) options.gotNewItemsCallBack(newItems, changedItems)
+
+      self.syncing = false
+      self.save()
+
+      // console.log('downloaded nums ' + returnJson.length + '  and new ? ', addedNew)
+      if (addedNew) {
+        // onsole.log('REDOWNLOADING MORE IN LIST ', theList)
+        await self.getNewitemsAsync(theList, options)
+      }
+
+      return null
+    }
+  }
+}
+
 JLOS.prototype.uploadNewItems = function (theList, options) {
   // for options list, see startSyncItems. (gotNewItemsCallBack and doNotCallUploadItems are not called.)
   // Unless items cannot be updated, it is unsafe to call this without calling startSyncItems because only startSyncItems checks for conflicts. this function just over-writes the previous version.
@@ -272,7 +405,7 @@ JLOS.prototype.uploadNewItems = function (theList, options) {
       }
     }
   }
-  if (anItem) {
+  if (anItem && transformedItem) {
     if (!anItem._id && !anItem.fj_local_temp_unique_id) {
       anItem.fj_local_temp_unique_id = this.data.fj_local_id_counter++
       transformedItem.fj_local_temp_unique_id = anItem.fj_local_temp_unique_id
@@ -336,6 +469,89 @@ JLOS.prototype.uploadNewItems = function (theList, options) {
     if (options.endCallBack) options.endCallBack()
   }
 }
+JLOS.prototype.uploadNewItemsAsync = async function (theList, options) {
+  // for options list, see startSyncItems. (gotNewItemsCallBack and doNotCallUploadItems are not called.)
+  // Unless items cannot be updated, it is unsafe to call this without calling startSyncItems because only startSyncItems checks for conflicts. this function just over-writes the previous version.
+  var self = this
+  if (!options) options = {}
+  if (!options.warningCallBack) options.warningCallBack = function (msgJson) { console.log('WARNING: ' + JSON.stringify(msgJson)) }
+
+  let listItemNumber = -1
+  let anItem = null
+  let transformedItem = null
+  if (this.data[theList] && this.data[theList].length > 0) {
+    for (let i = 0; i < this.data[theList].length; i++) {
+      if (this.data[theList][i] && this.data[theList][i].fj_modified_locally && !this.data[theList][i].fj_upload_error) {
+        anItem = this.data[theList][i]
+        transformedItem = JSON.parse(JSON.stringify(anItem))
+        try {
+          transformedItem = options.uploadedItemTransform ? options.uploadedItemTransform(transformedItem) : transformedItem
+          if (!transformedItem) this.syncWarnings.uploadWarnings.push({ list: theList, item: anItem })
+          listItemNumber = i
+          break
+        } catch (e) {
+          this.syncWarnings.uploadErrors.push({ list: theList, item: anItem })
+          this.data[theList][i].fj_upload_error = true
+          anItem = null
+        }
+      }
+    }
+  }
+  if (anItem && transformedItem) {
+    if (!anItem._id && !anItem.fj_local_temp_unique_id) {
+      anItem.fj_local_temp_unique_id = this.data.fj_local_id_counter++
+      transformedItem.fj_local_temp_unique_id = anItem.fj_local_temp_unique_id
+    }
+    if (!anItem.fj_deleted) anItem.fj_deleted = false // to add device
+    // this.data[theList][listItemNumber].fj_device_modified_on =
+    this.save()
+    var uploadOptions = options.app_table ? { app_table: options.app_table } : { collection: theList }
+
+    if (anItem._id) {
+      uploadOptions.updateRecord = true
+    }
+
+    // onsole.log('going to upload item :'+JSON.stringify(anItem))
+    // onsole.log('with uploadOptions.updateRecord '+uploadOptions.updateRecord)
+    // onsole.log('with options '+JSON.stringify(uploadOptions))
+    const returnData = await freepr.ceps.create(transformedItem, uploadOptions)
+    // check that the item id is correct - update the item and set modified to null
+    if (!transformedItem._id) { // new item
+      if (anItem.fj_local_temp_unique_id !== self.data[theList][listItemNumber].fj_local_temp_unique_id) {
+        console.warn('WARNING - POTENITAL SYNC ERROR 23', 'transformedItem', transformedItem, 'inlist', self.data[theList][listItemNumber])
+        options.warningCallBack({ error: 'id mismatch on upload', msg: 'There was an internal error (23) uploading and syncing one of the items.' })
+      }
+      anItem._id = returnData._id
+      anItem.fj_modified_locally = null
+      anItem._date_modified = returnData._date_modified
+      anItem._date_created = anItem._date_created || returnData._date_created
+      if (options.uploadedItemCallback) options.uploadedItemCallback(listItemNumber, self.data[theList][listItemNumber])
+      self.save()
+      self.uploadNewItems(theList, options)
+    } else if (anItem._id === returnData._id) {
+      if (self.data[theList][listItemNumber]._id !== returnData._id) {
+        console.warn('WARNING - POTENITAL SYNC ERROR 24')
+        options.warningCallBack({ error: 'id mismatch on upload', msg: 'There was an internal error (24) uploading and syncing one of the items.', item: anItem })
+      }
+      anItem.fj_modified_locally = null
+      anItem._date_modified = returnData._date_modified
+      self.save()
+      if (options.uploadedItemCallback) options.uploadedItemCallback(listItemNumber, self.data[theList][listItemNumber])
+      self.uploadNewItems(theList, options)
+    } else {
+      console.warn('mismatch', returnData, anItem)
+      options.warningCallBack({ error: 'id mismatch on upload', msg: 'There was an internal error (25) uploading and syncing one of the items.', item: returnData })
+      self.syncing = false
+      if (options.endCallBack) options.endCallBack()
+    }
+    return null
+  } else { // no new items
+    this.syncing = false
+    if (this.data[theList] && this.data[theList].length > 0) this.data[theList].map(function (anitem) { if (anitem) delete anitem.fj_upload_error })
+    if (options.endCallBack) options.endCallBack()
+    return null
+  }
+}
 
 // accessing changing lists
 JLOS.prototype.list = function (theList, options = {}) {
@@ -372,7 +588,7 @@ JLOS.prototype.get = function (theList, id, options = { idType: 'both' }) {
       for (let i = 0; i < refList.length; i++) {
         if (refList[i]._id && refList[i]._id === id) {
           return this.data[theList][i]
-        } else if (options.idType === 'both' && !refList[i]._id && refList[i].fj_local_temp_unique_id && refList[i].fj_local_temp_unique_id === id) {
+        } else if (options.idType === 'both' && !refList[i]._id && refList[i].fj_local_temp_unique_id && ('' + refList[i].fj_local_temp_unique_id) === id) {
           return this.data[theList][i]
         }
       }
@@ -512,13 +728,47 @@ JLOS.prototype.queryLatest = function (theList, params, options) {
   // same options as below, but getIndex doesnt work
   options = options || {}
   options.getOne = true
-  return this.queryObjs(theList, params, options)[0]
+  return this.queryObjs(theList, params, options)
 }
 JLOS.prototype.queryObjs = function (theList, params, options = {}) {
   // options: makeCopy, getOne, includeDeleted, getIndex (only works with getOne and not queryLatest)
   // options to add: startAtBeg
   // search params
   // onsole.log(queryObjs)
+  // console.log('quaeryObjs ', params)
+
+  const hasParam = function (object, param, value) {
+    if (!['string', 'number'].includes(typeof value)) {
+      console.error('bad query for ', { object, param, value })
+      // throw new Error('cannot parse non string num vales')
+      return false
+    }
+    if (!object) return false
+    if (typeof param !== 'string') return false
+    // note complex queries not accepted yet
+    if (!object[param] && !value) return true
+    if (typeof object[param] === 'string' || typeof object[param] === 'number') return object[param] === value
+    // note - this could lead to false positive if both key.key exists and 'key.key' exists as a key
+    if (Array.isArray(object[param])) { return object[param].includes(value) } /* for arrays of strings/nums */
+    // note only looks up values in arrays - not values within objects within arrays
+    if (param.includes('.')) {
+      const keyChain = param.split('.')
+      const key0 = keyChain.shift()
+      if (key0 === '[]' && Array.isArray(object)) {
+        let found1 = false
+        const key1 = keyChain.shift()
+        object.forEach(objInArray => {
+          if (hasParam(objInArray, key1, value)) found1 = true
+          if (hasParam(objInArray, key1, value)) return true
+        })
+        return found1
+      } else {
+        return hasParam(object[key0], keyChain.join('.'), value)
+      }
+    }
+    return false
+  }
+
   var refList = this.data[theList]
   var objectList = []
   let isCandidate = true
@@ -528,7 +778,9 @@ JLOS.prototype.queryObjs = function (theList, params, options = {}) {
     for (i = refList.length - 1; i > -1; i--) {
       isCandidate = true
       Object.keys(params).forEach(function (aParam) {
-        if (isCandidate && refList[i] && (refList[i][aParam] === params[aParam] || (!refList[i][aParam] && !params[aParam]))) {
+        // console.log('checking ', aParam, refList[i][aParam], ' vs ', params[aParam])
+        // if (isCandidate && refList[i] && (refList[i][aParam] === params[aParam] || (!refList[i][aParam] && !params[aParam]))) {
+        if (isCandidate && hasParam(refList[i], aParam, params[aParam])) {
           isCandidate = true
         } else {
           isCandidate = false
@@ -539,8 +791,9 @@ JLOS.prototype.queryObjs = function (theList, params, options = {}) {
       if (isCandidate && options.getOne) { break }
     }
   }
-  if (options && options.getOne && options.getIndex) return [objectList[0], (isCandidate ? i : -1)]
-  else return objectList
+  if (options.getOne && options.getIndex) return [objectList[0], (isCandidate ? i : -1)]
+  if (options.getOne) return objectList.length > 0 ? objectList[0] : null
+  return objectList
 }
 
 const jlosMarkChanged = function (anItem) {
