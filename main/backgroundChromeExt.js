@@ -57,6 +57,9 @@ chrome.storage.local.getBytesInUse(['vulogCopy'], function (bytes) { console.log
 
 const vulog = new JLOS('vulog', { saver: 'nosave', numItemsToFetchOnStart: 50 })
 
+const CURRENT_TRANSITION_WARNING = 1 // increement these to 2 for the next set of warnings
+const TRANISITION_WARNING_HAS_BEEN_MUTED = 0.5
+
 // Get locally stored copy of vulog from chrome local storage
 chrome.storage.local.get('vulogCopy', function (items) {
   // onsole.log('vulogCopy meta is' + JSON.stringify(items.vulogCopy.freezrMeta))
@@ -75,6 +78,16 @@ chrome.storage.local.get('vulogCopy', function (items) {
   }
   if (!vulog.data.hColor) vulog.data.hColor = 'green'
   if (!vulog.data.defaultHashTag) vulog.data.defaultHashTag = ''
+
+  // vulog.data.transitionWarnings = null
+  if (!vulog.data.transitionWarnings) { // first time seeing this
+    if (vulog.data.marks.length === 0 && vulog.data.logs.length === 0) {
+      vulog.data.transitionWarnings = CURRENT_TRANSITION_WARNING + TRANISITION_WARNING_HAS_BEEN_MUTED
+    } else {
+      vulog.data.transitionWarnings = CURRENT_TRANSITION_WARNING
+    }
+    saveToChrome(true, null, 'vulogCopy')
+  }
 
   freezrMeta.set(vulog.data.freezrMeta)
   if (!freezrMeta.appName) freezrMeta.appName = 'com.salmanff.vulog' // temp fix
@@ -870,6 +883,12 @@ function wordsInList1InList2 (requiredWords, wordsToCheck) {
   requiredWords.forEach(function (aWord) { if (aWord !== ' ' && wordsToCheck && wordsToCheck.indexOf(aWord) < 0) tempret = false })
   return tempret
 }
+requestApi.muteTransitionWarning = function (request, sender) {
+  vulog.data.transitionWarnings = CURRENT_TRANSITION_WARNING + TRANISITION_WARNING_HAS_BEEN_MUTED
+  saveToChrome(true, null, 'muteTransitionWarning')
+  return({ success: true })
+}
+
 
 // pop up APIs admin
 requestApi.getFreezrmeta = function (request, sender) {
@@ -890,6 +909,8 @@ requestApi.getVulogState = function (request, sender) {
     offlineCredentialsExpired: (freezr && freezr.app && freezr.app.offlineCredentialsExpired),
 
     freezrMeta: vulog.data.freezrMeta,
+
+    transitionWarnings: vulog.data.transitionWarnings,
 
     cookieRemovalHasBeenCalled: vulog.data.cookieRemovalHasBeenCalled
   }

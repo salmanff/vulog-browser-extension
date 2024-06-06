@@ -26,7 +26,6 @@ const freezr = {
             console.warn(error)
           } else {
             var theInfo = { username: userName, password: authPassword, client_id: appName, grant_type: 'password' }
-            console.log({ theInfo })
             freezerRestricted.connect.ask('/oauth/token', theInfo, function (error, resp) {
               resp = freezr.utils.parse(resp)
               if (error || (resp && resp.error)) {
@@ -133,7 +132,6 @@ const freezerRestricted = {
       freezerRestricted.connect.send(url, null, callback, 'GET', null, options)
     },
     send: function (url, postData, callback, method, contentType, options = {}) {
-      console.log('send ', { url, method, options })
       const { freezrMeta } = options
       let req = null
       let badBrowser = false

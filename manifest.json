@@ -2,14 +2,13 @@
   "name": "hiper.cards - web site logger, bookmarker & highlighter",
   "short_name": "hiper.cards",
   "description": "An app for logging, bookmarking and highlighting the text on the pages you visit on chrome/brave browsers.",
-  "version": "0.0.5002",
+  "version": "0.0.5003",
   "manifest_version": 3,
 
   "permissions":[ 
       "tabs",
       "contextMenus",
       "storage",
-      "cookies",
       "scripting",
       "activeTab",
       "notifications"

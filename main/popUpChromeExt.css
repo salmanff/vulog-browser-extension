@@ -98,6 +98,8 @@ a {
   padding: 3px;
 }
 
+
+
 #pallette {
   font-size : 9px;
   display: inline-block;
@@ -500,12 +502,17 @@ a {
     padding-right: 40px;}
 
 /* warnings */
+#closeTransWarnings {
+  float: right;
+  margin-top: -5px;
+  margin-right: -5px;
+}
 #closeWarnings {
   position: absolute;
   top:0px;
   left:0px;
 }
-#closeWarnings:before {
+#closeWarnings:before, #closeTransWarnings:before {
   font-family: FontAwesome;
   content: "\f057";
   padding-right: 2px;
@@ -528,6 +535,21 @@ a {
     background-color: white;
     opacity: 0.8;   
 }
+#transitionWarning {
+  margin: 5px;
+  padding: 5px;
+  color: red;
+  font-weight: bold;
+  border: 1px darkgreen solid;
+  border-radius: 5px;
+  display: none;
+  width: 375px;
+  background-color: yellowgreen;
+  opacity: 0.8;     
+}
+#transWanringsOuter {
+  display: none;
+} 
 .warnOnFullPage {
     margin-top: 40px;
 }

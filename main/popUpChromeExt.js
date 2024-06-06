@@ -81,8 +81,6 @@ const getvulogInfotoDrawCurrentTabForPopUp = async function () {
   // })
 }
 const updateStateBasedOnVulogInfo = function (vulogInfo) {
-  // onsole.log('updateStateBasedOnVulogInfo ', { vulogInfo })
-
   const { currentMark, currentLog } = vulogInfo
   const backEndVstate = vulogInfo.vState
   // purl,  contacts, edit_mode, cookieRemovalHasBeenCalled
@@ -108,6 +106,11 @@ const updateStateBasedOnVulogInfo = function (vulogInfo) {
   }
   if (backEndVstate.fatalErrors) showWarning('Serious Error Encountered: "' + backEndVstate.fatalErrors + '".   You may want to restart your browser')
 
+  if (backEndVstate.transitionWarnings === 1) {
+    dg.el('transitionWarning', { show: true })
+    dg.el('transWarnInner').innerText = 'vulog is now called hiper.cards. '
+    if (backEndVstate.freezrMeta.userId) dg.el('transWarnInner').innerText += 'In a subsequent version of this app, you will be asked to transition your historic data from vulog to hiper.cards. email info@freezr.info with any questions.'
+  }
   if (!freezrMeta.appToken) dg.el('openpopupintab_messages').style.display = 'none'
 }
 vState.environmentSpecificSendMessage = async function (params) {
@@ -463,6 +466,16 @@ var doClick = function (args) {
     }
     chrome.tabs.create({ url: '/main/view.html?' + ending })
   }
+}
+document.getElementById('closeTransWarnings').onclick = function (e) {
+  e.target.style.display = 'none'
+  chrome.runtime.sendMessage({ msg: 'muteTransitionWarning' }, function (response) { 
+    if (response && response.success) {
+      e.target.nextElementSibling.innerText = 'This message will not show any more (after you close this ;) '    
+    } else {
+      e.target.nextElementSibling.innerText = 'There was an error trying to mute this message. Please try again later.'
+    }
+  })
 }
 
 var showWarning = function (msg, timing) {
