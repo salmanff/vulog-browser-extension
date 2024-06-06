@@ -40,21 +40,22 @@ FREEZR_META.prototype.set = function (props) {
   }
 }
 
-var freezrMeta
-if (manifest) { // for offline apps, where manifest is defined
-  // Below used for electron
-  var appName = (manifest.structure && manifest.structure.identifier) ? manifest.structure.identifier : ''
-  var appVersion = (manifest.structure && manifest.structure.version) ? manifest.structure.version : ''
-  var appDisplayName = (manifest.structure && manifest.structure.display_name) ? manifest.structure.display_name : ''
 
-  freezrMeta = new FREEZR_META(appName, appVersion, appDisplayName)
+// USED FOR ELECTRON APPS
+// if (manifest) { // for offline apps, where manifest is defined
+//   // Below used for electron
+//   var appName = (manifest.structure && manifest.structure.identifier) ? manifest.structure.identifier : ''
+//   var appVersion = (manifest.structure && manifest.structure.version) ? manifest.structure.version : ''
+//   var appDisplayName = (manifest.structure && manifest.structure.display_name) ? manifest.structure.display_name : ''
 
-  // Electron specific (ie if manifest exists, )
-  // window.nodeRequire = require;
-  delete window.require
-  delete window.manifest // or window.appConfig?
-  delete window.module
-} else {
-  freezrMeta = new FREEZR_META()
-  freezrMeta.initialize() // eslint hack
-}
+//   freezrMeta = new FREEZR_META(appName, appVersion, appDisplayName)
+
+//   // Electron specific (ie if manifest exists, )
+//   // window.nodeRequire = require;
+//   delete window.require
+//   delete window.manifest // or window.appConfig?
+//   delete window.module
+// } else {
+const freezrMeta = new FREEZR_META('com.salmanff.vulog', '0.1', 'vulog')
+freezrMeta.initialize() 
+// }

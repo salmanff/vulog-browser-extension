@@ -1,19 +1,17 @@
 // highlight.js
-// Compare iosApp vs ChromeExtension  - verified against iosApp 2022-10
+// Compare iosApp vs ChromeExtension  - verified against iosApp 2022-07-05 and  2022-10??
 
 // Highligher FUNCTIONS from github.com/jeromepl/highlighter
 // Pick a combination of characters that should (almost) never occur
 
-/* global Node, vulogOverlayGlobal, showVulogOverlay, mapColor */
+/* global Node, vState, showVulogOverlay, mapColor */
 
-/* export highlightFromSelection(), setHighlightsToColor() */
+/* exported highlightFromSelection, setHighlightsToColor */
 
 var DELIMITERS = {
   start: '~|:;',
   end: ';:~|'
 }
-
-var HIGHLIGHT_CLASS = 'VULOG--highlighter--highlighted'
 
 function getReplacements (color, id, hasComment) {
   return {
@@ -44,13 +42,17 @@ function resetVars () {
 }
 
 const highlightFromSelection = function (highlightObj, selection, container) {
+  // onsole.log('will highlight now string 0')
   const selString = highlightObj.string
+  // onsole.log('will highlight now string 1')
   const color = mapColor(highlightObj.color)
+  // onsole.log('will highlight now string 2')
   const id = highlightObj.id
+  // onsole.log('will highlight now string 3')
   const hasComment = (highlightObj.vComments && highlightObj.vComments.length > 0)
-  // onsole.log('will highlight now string ', selString, ' with color ', color, { vulogOverlayGlobal })
+  // onsole.log('will highlight now string ', selString, ' with color ', color)
 
-  if (!vulogOverlayGlobal.shown_highlight || vulogOverlayGlobal.shown_highlight === 'self' || vulogOverlayGlobal.shown_highlight === 'self_mark') {
+  // if (vState.showThis === 'ownMark' || vState.showThis === 'redirectmark') {
     // todo - why should 'self' be in above - self_mark shoudl suffice - todo clean logic
     resetVars()
 
@@ -101,10 +103,10 @@ const highlightFromSelection = function (highlightObj, selection, container) {
     if (selection.removeAllRanges) selection.removeAllRanges()
 
     return true // No errors. 'undefined' is returned by default if any error occurs during this method's execution, like if 'content.replace' fails by 'content' being 'undefined'
-  } else {
-    showVulogOverlay('Press on the "show Your Own Highlights" button to be able to add new highlights')
-    return false
-  }
+  // } else {
+  //   vState.showVulogOverlay()
+  //   return false
+  // }
 }
 
 function recursiveWrapper (container) {
@@ -171,6 +173,7 @@ const setHighlightsToColor = function (colorOrInherit) {
 }
 
 /** UTILS **/
+
 // Escape Regex special characters
 function escapeRegex (text) {
   return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')

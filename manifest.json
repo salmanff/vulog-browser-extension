@@ -1,37 +1,53 @@
 {
-  "name": "vulog - logger, bookmarker & highlighter",
-  "short_name": "vulog",
+  "name": "hiper.cards - web site logger, bookmarker & highlighter",
+  "short_name": "hiper.cards",
   "description": "An app for logging, bookmarking and highlighting the text on the pages you visit on chrome/brave browsers.",
-  "version": "0.0.5001",
-  "manifest_version": 2,
-  "browser_action": {
-    "default_title": "Logging and bookmarking web page views",
-    "default_icon": "vulog logo v1.png",
-    "default_popup": "main/popUpChromeExt.html"
-  },
-  "permissions":[
+  "version": "0.0.5002",
+  "manifest_version": 3,
+
+  "permissions":[ 
       "tabs",
       "contextMenus",
       "storage",
-       "cookies",
-      "<all_urls>"
+      "cookies",
+      "scripting",
+      "activeTab",
+      "notifications"
   ],
-  "optional_permissions": [ "notifications" ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "optional_permissions": [ ],
   "content_scripts": [
     {
       "matches": ["http://*/*", "https://*/*"],
-      "js": ["sharedIosResources/utils.js", "sharedIosResources/pageData.js", "main/parsePage.js", "sharedIosResources/highlight.js","sharedIosResources/overlay.js", "sharedIosResources/highlightChangeOverlay.js","main/redirect.js", "sharedIosResources/load_highlights.js"],
-      "css": ["sharedIosResources/overlay.css", "sharedIosResources/highlightChangeOverlay.css"],
+      "js": ["sharedIosResources/overlay_constants.js", "sharedDrawTools/drawUtils.js", "sharedIosResources/utils.js", "sharedIosResources/pageData.js", "sharedIosResources/parsePage.js", "sharedIosResources/highlight.js","sharedIosResources/overlay.js","main/redirect.js", "sharedIosResources/load_highlights.js","freezr/freezr_applogin_only.js"],
+      "css": ["sharedIosResources/overlay.css"],
       "all_frames": true
     }
   ],
   "background": {
-      "scripts": ["sharedIosResources/utils.js", "sharedIosResources/manifest.js", "freezr/freezr_app_init.js", "freezr/freezr_core.js" ,"freezr/jlos-frozen.js", "sharedIosResources/highlight.js" , "sharedIosResources/pageData.js",  "main/backgroundChromeExt.js"]
+      "service_worker": "main/backgroundChromeExt.js"
+  },
+  "action": {
+    "default_popup": "main/popUpChromeExt.html",
+    "default_icon": {
+        "16": "static/hipercardsLogo_small_16.png",
+        "48": "static/hipercardsLogo_small_48.png",
+        "72": "static/hipercardsLogo_small_128.png"
+    }
   },
 
-  "icons": { "16": "static/vulog_logo_16.png", "48": "static/vulog_logo_48.png", "128": "static/vulog_logo_128.png" },
+  "icons": { "16": "static/hipercardsLogo_small_16.png", "48": "static/hipercardsLogo_small_48.png", "128": "static/hipercardsLogo_small_128.png" },
 
   "web_accessible_resources": [
-      "images/*.png"
+    {
+      "resources": [
+        "images/*"
+      ],
+      "matches": [
+        "*://*/*"
+      ]
+    }
   ]
 }

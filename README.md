@@ -17,7 +17,7 @@ Web Page Info: The pop-up shows detailed info on the web pages you visit. You ca
 Data storage: Your bookmarks and browser history is kept in the chrome's local storage, which has limited space. After some weeks (or months depending on usage), vulog automatically deletes older items.
 
 Privacy and CEPS
-vulog doesn't send any of your data to any outside servers, and you can always delete your data from the "Settings" tab. If you want to store your data on your own server you will need to set up a Personal Data Store. vulog was built to be able to accept CEPS-compatible data stores. (See here for more details https://www.salmanff.com/ppage/2020-3-15-Why-CEPS-Matters )
+vulog doesn't send any of your data to any outside servers, and you can always delete your data from the "Settings" tab. If you want to store your data on your own server you will need to set up a Personal Data Store. vulog was built to be able to accept CEPS-compatible data stores. (See here for more details https://www.salmanff.com/2020-3-15-Why-CEPS-Matters )
 Having your data sit on your personal data store also means that you can publish your bookmarks and highlights and notes. (More on this in later versions)
 
 Acknowledgements

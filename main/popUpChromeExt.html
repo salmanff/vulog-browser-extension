@@ -4,187 +4,93 @@
 <head>
     <meta charset="utf-8">
     <link href="/main/popUpChromeExt.css" rel="stylesheet">
-    <link href="/sharedIosResources/highlightChangeOverlay.css" rel="stylesheet">
+    <link href="/sharedIosResources/overlay.css" rel="stylesheet">
     <link rel="stylesheet" href="/static/font-awesome.min.css">
 </head>
 <body>
 	<div  id="theWindow">
-    <div id="warning_outer" class="warning_outer">
-      <div id="click_closeWarnings"></div>
-      <div id="warnings"></div>
+
+    <div id="leftBar">
+      <img id="top_logo" src="/static/hipercardsLogo.png"/>
+
+      <div class="leftBarLogos" id ="openpopupintab_history">
+        <div class="fa fa-history stars chosen-star" style="margin-bottom: 0; color: cornflowerblue;"></div>
+        <span style="color: blue;">History</span>     
+      </div>
+
+      <div class="leftBarLogos" id ="openpopupintab_bookmarks">
+        <div class="fa fa-bookmark-o  stars chosen-star" style="margin-bottom: 0; color: cornflowerblue;"></div>
+        <span style="color: blue;">Marks</span> 
+      </div>
+
+      <div class="leftBarLogos"  id ="openpopupintab_messages">
+        <div class="fa fa-envelope-o stars chosen-star" style="margin-bottom: 0; color: cornflowerblue;""></div>
+        <span style="color: blue;">Messages</span>    
+      </div>
+
+      <div class="leftBarLogos"  id ="openpopupintab_settings">
+        <div class="fa fa-cog stars chosen-star" style="margin-bottom: 0; color: cornflowerblue;""></div>
+        <span style="color: blue;">Settings</span>    
+      </div>
+
+
     </div>
+    <div id="tabdiv" >
+      <div id="thisPage_title" ></div>
 
-    <div id="topBar">
-        <img id="top_logo" src="/vulog logo v1.png"/>
-        <span id="logo_text">vulog</span>
-        <span id="click_gototab_current" class="top_menu_item tm_opened">Current</span>
-        <span id="click_gototab_inbox" class="top_menu_item tm_closed">Inbox</span>
-        <span id="click_gototab_messages" class="top_menu_item tm_closed">Messages</span>
-        <span style="display:none"  id="click_gototab_history" class="top_menu_item tm_closed"> History</span>
-        <span style="display:none" id="click_gototab_feed" class="top_menu_item tm_closed">Feed</span>
-        <span id="click_gototab_more" class="top_menu_item tm_closed">Settings</span>
-    </div>
+      <div id="warning_outer" class="warning_outer">
+        <div id="closeWarnings"></div>
+        <div id="warnings"></div>
+      </div>
 
+      <div id="thisPage_stars_and_notes" ></div>
 
+      <div id="tabInner">
 
-    <div class="tabdiv" >
-        <div id="current_tab" style="display:none">
-          <div id="pallette"></div>
+        <div id="pallette"></div>
 
-          <div id="thisPage_details" width="300px"></div>
+        <div id = "shareOptions" style="display:none" >DIV FOR SHARING</div>
+        
+        <div class="vulog_title_subtle">Highlights</div>
+        <div id="highlights_area">To highlight text from the page, right click on the page and choose 'highlight'.
+          Use the color pallette above to change your highlight color.
+          <br>
+          (Note: Highlights shouldnt overlap.)
+        </div>
 
-          <div id = "shareOptions" style="display:none" >DIV FOR SHARING</div>
+        <div id="thisPage_Sharing_loggedIn"></div>
 
+        <div id="thisPage_messages"></div>
 
-          <div class="vulog_title_subtle"><span class="fa fa-sticky-note littlestars unchosen-star"></span>Annotations</div>
-          <div id="annotations"></div>
+        <div id="thisPage_details"></div>
 
-          <div id='therest' style="margin-left:5px">
+        <div id="thisPage_Sharing_loggedOut"></div>
 
-            <div class="vulog_title_subtle"><span class="fa fa-quote-left littlestars unchosen-star"></span><span class="fa fa-quote-right littlestars unchosen-star"></span>Highlights</div>
-            <div id="highlights_area">To highlight text from the page, right click on the page and choose 'highlight'.
-              <br/>- Use the color pallette to the top right here to change your highlight color.
-              <br/>- Highlights shouldnt overlap.
-            </div>
-
-            <div style="margin-top:10px;"> &nbsp; </div>
-          </div>
-
-            <div style="display:none">
+        <div style="margin-top:10px;"> &nbsp; </div>
+          <div style="display:none">
               area formaking base64s ;)
               <input id="inputFileToLoad" type="file" />
                 <div id="imgTest"></div>
-            </div>
-
-        </div>
-
-        <div id="inbox_tab" style="display:none">
-          <br/>
-          <div id="inbox_toptitle">Inbox</div>
-          <div class="inputHolder" id="marksInputHolder">
-            <div class="input_explain">
-              This tab shows all your bookmarks marked with 'inbox' (and not 'archive'.)
-            </div>
-            <div>
-                <span id="click_openpopupintab_inbox" class="openPopUpButt">Open your inbox and bookamrks in a browser tab.</span>
-                <span id="click_switchGroupByview" class="openPopUpButt" data-placeholder="date">Group by referrer</span>
-            </div>
           </div>
 
-          <div id="vulog_inbox_records"></div>
-        </div>
 
-        <div id="messages_tab" style="display:none">
-          <br/>
-          <span id="click_openpopupintab_msgSent" class="openPopUpButt">Show Messages Sent</span>
-          <span id="click_openpopupintab_msgRec" class="openPopUpButt">Show in browser tab.</span>
-          <div id="messages_toptitle">Messages Received</div>
-
-
-          <div id="vulog_messages_records"></div>
-        </div>
-
-        <div id="history_tab" style="display:none">
-                <div class="inputHolder" id="historyInputHolder">
-                  <br/>
-                  <div class="input_explain">
-                    Search your browsing history.
-                  </div>
-
-                  <div id="idSearchHistoryBox" class="inputBox" contenteditable="true" data-placeholder=" &nbsp; Search"></div>
-                  <span id="click_search_history">Search</span>
-                </div>
-
-                <div id="click_resetsearch"  class="history_xtra_butt">reset search</div>
-                <div id="vulog_history_records"></div>
-                <div id="history_more"></div>
-        </div>
-
-        <div id="feed_tab" style="display:none">
-          <div class="inputHolder" id="historyInputHolder">
-            <br/>
-            <div class="input_explain">
-              Feed will be coming soon.
-            </div>
-
-          </div>
-        </div>
-
-        <div id="more_tab" style="display:none">
-            <br/>
-            <br/>
-            <br/>
-            <div class="moreTabButts">
-                <span class="fa topBut_Mobile fa-pause" id="click_pause_0" ></span>
-                <span id="click_pause_1" class="more_tab_butt_text">Pause Logging </span>
-            </div>
-            <div class="separator" > &nbsp; </div>
-            <br/>
-            <div class="moreTabText">
-             To remove your history and marks from this device, press below. Note that the history uploaded to your freezr will remain. (To log in or log out to your freezr, press the freezr button on the top right.)
-            </div>
-            <div class="moreTabButts">
-                <span class="fa topBut_Mobile fa-trash" id="click_removeLocalData_0" ></span>
-                <span id="click_removeLocalData_1" class="more_tab_butt_text"> Remove ALL locally stored data </span>
-            </div>
-            <br/>
-            <div class="separator" > &nbsp; </div>
-            <br/>
-
-            <div class="moreTabButts">
-                <span class="fa topBut_Mobile fa-trash" id="click_removeHistoryOnly_0" ></span>
-                <span id="click_removeHistoryOnly_1" class="more_tab_butt_text"> Remove locally history only. (Your marks will stay.)</span>
-            </div>
-            <br/>
-            <div id ="moreLoggedInSection">
-              <div class="separator" > &nbsp; </div>
-
-              <div class="moreTabButts" >
-                  <br/>
-                  <span class="fa topBut_Mobile fa-refresh" id="click_trySyncing_0" ></span>
-                  <span id="click_trySyncing_1" class="more_tab_butt_text"> Try Syncing Now</span>
-                  <br/>
-              </div>
-              <br/>
-              <div class="separator" > &nbsp; </div>
-
-              <div class="moreTabButts">
-                  <br/>
-                  <span class="fa topBut_Mobile fa-user-times" id="click_logout_0" ></span>
-                  <span id="click_logout_1" class="more_tab_butt_text"> Log out of your Personal Server</span>
-                  <br/>
-              </div>
-            </div>
-            <br/>
-
-            <div>
-                <br/>
-                <div>Add a default hashtag to all new bookmarks</div>
-                <div class="inputBox" id="defaultHashtagDiv" contenteditable="true"></div>
-                <br/>
-            </div>
-          </div>
-          <br/>
-
-        </div>
+      </div>
     </div>
+  </div>
 
-
-        <script src="/sharedIosResources/manifest.js"></script>
+        <script src="/main/manifest.js"></script>
         <script src="/freezr/freezr_app_init.js"></script>
         <script src="/freezr/freezr_core.js"></script>
         <script src="/freezr/freezr_app_post_scripts.js"></script>
 
         <script src="/freezr/jlos-frozen.js"></script>
-        <script src="/main/draw/dgelements.js"></script>
-        <script src="/main/draw/drawutils.js"></script>
-        <script src="/main/draw/trackers.js"></script>
-        <script src="/main/draw/sharing.js"></script>
-        <script src="/main/draw/lister.js"></script>
-        <script src="/main/draw/history.js"></script>
+        <script src="/sharedDrawTools/dgelements.js"></script>
+        <script src="/sharedDrawTools/drawutils.js"></script>
+        <script src="/sharedDrawTools/lister.js"></script>
+        <script src="/main/history.js"></script>
         <script src="/main/popUpChromeExt.js"></script>
         <script src="/sharedIosResources/utils.js"></script>
-        <script src="/sharedIosResources/highlightChangeOverlay.js"></script>
-    </div>
+        <script src="/sharedIosResources/overlay_constants.js"></script>
+
 </body>
 </html>

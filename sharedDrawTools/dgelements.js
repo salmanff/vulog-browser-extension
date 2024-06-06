@@ -1,11 +1,11 @@
 
 // originated from David Gilbertson (dg)
 // hackernoon.com/how-i-converted-my-react-app-to-vanillajs-and-whether-or-not-it-was-a-terrible-idea-4b14b1b2faff
-// v 0.0.02
+// v 0.0.02 - reduced in size - removed table, row and added grid and flex
 
-var dg = {
+const dg = {
   attributeExceptions: [
-    'role', 'colspan', 'data-placeholder', 'href', 'target', 'dgdata'
+    'role', 'colspan', 'href', 'target', 'class', 'dgdata', 'Name', 'width', 'eventListener', 'html' // + all starting with 'data-'
   ],
 
   addAttributeException: function (attr) {
@@ -37,15 +37,15 @@ var dg = {
 
     Object.keys(styles).forEach((styleName) => {
       if (styleName in el.style) {
-        el.style[styleName] = styles[styleName] // eslint-disable-line no-param-reassign
+        el.style[styleName] = styles[styleName]
       } else {
-        console.warn(`${styleName} is not a valid style for a <${el.tagName.toLowerCase()}>`)
+        console.warn(styleName + 'is not a valid style for a ' + el.tagName)
       }
     })
   },
 
   makeElement: function (type, textOrPropsOrChild, ...otherChildren) {
-    var el = document.createElement(type)
+    const el = document.createElement(type)
 
     if (Array.isArray(textOrPropsOrChild)) {
       this.appendArray(el, textOrPropsOrChild)
@@ -57,12 +57,16 @@ var dg = {
       // do nothing
     } else if (typeof textOrPropsOrChild === 'object') {
       Object.keys(textOrPropsOrChild).forEach((propName) => {
-        if (propName in el || this.attributeExceptions.includes(propName)) {
+        if (propName in el || this.attributeExceptions.includes(propName) || propName.indexOf('data-') === 0) {
           const value = textOrPropsOrChild[propName]
 
           if (propName === 'style') {
             this.setStyles(el, value)
-          } else if (this.attributeExceptions.includes(propName) && value) {
+          } else if (propName === 'eventListener') {
+            el.addEventListener(value.event, value.func)
+          } else if (propName === 'html') {
+            el.innerHTML = value
+          } else if ((this.attributeExceptions.includes(propName) || propName.indexOf('data-') === 0) && value) {
             el.setAttribute(propName, value)
           } else if (value) {
             el[propName] = value
@@ -85,11 +89,13 @@ var dg = {
   h2: function (...args) { return this.makeElement('h2', ...args) },
   h3: function (...args) { return this.makeElement('h3', ...args) },
   header: function (...args) { return this.makeElement('header', ...args) },
+  center: function (...args) { return this.makeElement('center', ...args) },
   p: function (...args) { return this.makeElement('p', ...args) },
   span: function (...args) { return this.makeElement('span', ...args) },
   img: function (...args) { return this.makeElement('img', ...args) },
   b: function (...args) { return this.makeElement('b', ...args) },
   input: function (...args) { return this.makeElement('input', ...args) },
+  label: function (...args) { return this.makeElement('label', ...args) },
 
   hr: function () { return document.createElement('hr') },
   br: function () { return document.createElement('br') },
@@ -97,58 +103,14 @@ var dg = {
   option: function (...args) { return this.makeElement('option', ...args) },
 
   createSelect: function (list = [], props = {}, options = {}) {
-    // options.value is the item the lsit is set to
+    // options.value is the item the list is set to
     const theSel = dg.select(props)
     list.forEach(anItem => theSel.appendChild(dg.option(anItem)))
     if (options.value) theSel.value = options.value
     return theSel
   },
-  row: function (record, options, rowCounter) {
-    // onsole.log("making row", record)
-    const isHeader = rowCounter === -1
-    const row = this.makeElement('tr', options.props.tr)
-    if (options.keys.showThese && options.keys.showThese.length > 0) {
-      options.keys.showThese.forEach((key) => {
-        let props = isHeader ? options.props.th : options.props.td
-        if (!isHeader && options.props && options.props.keyspecific && options.props.keyspecific[key]) props = Object.assign({}, props, options.props.keyspecific[key])
-        if (options.props && options.props.id) {
-          const theId = options.props.id(key, record, rowCounter)
-          if (theId) props.id = theId
-        }
-        if (isHeader && options.headerTitles && options.headerTitles[key]) props.title = options.headerTitles[key]
-        // for header, can have a record with the display_names
-        const content = ((isHeader && (!record || !record[key])) ? key : record[key])
-        row.appendChild((!isHeader && options.transform && options.transform[key] && options.transform[key](null, props, record, rowCounter))
-          ? options.transform[key]('td', props, record, rowCounter)
-          : this.makeElement((isHeader ? 'th' : 'td'), props, content)
-        )
-      })
-    }
-    return row
-  },
-  table: function (data, options) {
-    // onsole.log("table ",data,options)
-    options = options || {}
-    options.props = options.props || {}
-    options.keys = options.keys || {}
-    let rowCounter = -1
-    // get keys from header
-    if (!options.keys.showThese) options.keys.showThese = this.utils.getKeysFromdata(data, options.keys.dontShow)
-    const theTable = this.makeElement('table', options.props.table)
-    const theThead = this.makeElement('thead', options.props.thead)
-    theTable.appendChild(theThead)
-    theThead.appendChild(this.row(options.headers, options, rowCounter++))
-    const theBody = this.makeElement('tbody', options.props.tbody)
-    theTable.appendChild(theBody)
-    if (data && data.length > 0) data.forEach((record) => { theBody.appendChild(this.row(record, options, rowCounter++)) })
-    return theTable
-  },
 
-  list: function (data, options) {
-    return this.makeElement('ul')
-  },
-
-  el: function (id, options) {
+  el: function (id, options, ...children) {
     const theEl = document.getElementById(id)
     if (theEl) {
       if (options && options.clear) theEl.innerHTML = ''
@@ -156,6 +118,9 @@ var dg = {
       if (options && options.show) theEl.style.display = 'block'
       if (options && options.showil) theEl.style.display = 'inline-block'
       if (options && options.hide) theEl.style.display = 'none'
+      if (children && children.length > 0) {
+        children.forEach(child => theEl.appendChild(child))
+      }
     }
     return theEl
   },
@@ -175,7 +140,6 @@ var dg = {
       el.style.display = 'none'
     }
   },
-
   hide_els: function (ids, options) {
     if (!Array.isArray(ids)) ids = [ids]
     ids.forEach(id => { if (this.el(id)) this.el(id).style.display = 'none' })
@@ -186,21 +150,7 @@ var dg = {
       theEl.innerHTML = ''
       this.appendArray(theEl, children)
     }
-  },
-  utils: {
-    getKeysFromdata: function (data, dontShow) {
-      dontShow = dontShow || []
-      const keysToShow = []
-      if (!data || data.length === 0) {
-        return null
-      } else {
-        data.forEach((record) => {
-          Object.keys(record).forEach((propName) => {
-            if (keysToShow.indexOf(propName) < 0 && dontShow.indexOf(propName) < 0) keysToShow.push(propName)
-          })
-        })
-        return keysToShow
-      }
-    }
   }
 }
+
+// export { dg }

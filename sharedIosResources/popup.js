@@ -1,7 +1,6 @@
 // popup.js for safari extension
-/* global chrome, browser */ // from system
 
-// onsole.log('hello World! from the extension', browser);
+/* global chrome, browser */
 
 var url
 var mark

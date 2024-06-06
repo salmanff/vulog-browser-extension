@@ -1,4 +1,4 @@
-/* Overlay.css for vulog  ios and browser extension*/
+/* viewInTab.css for vulog  ios and browser extension*/
 
 /* For Vulog browser */
 
@@ -6,10 +6,98 @@ body {
   font-family: "Lucida Sans Unicode", "Helvetica Neue", "Arial", sans-serif;
   margin:0;
 }
-a {
-    color: '#0000AB';
-    text-decoration: none;
-    color: grey;
+
+#viewInTabWindow {
+  padding: 10px;
+  padding-top: 0;
+  background-color: #057d47;
+  min-height: 1000px;
+}
+#topBar {
+  background-color: whitesmoke;
+  margin: -4px -10px 10px -15px;
+  padding-bottom: 5px;
+}
+#top_logo{
+    width: 55px;
+    margin-bottom: -30px;
+    margin-left: 20px;
+} 
+#logo_text, .tmChosen{
+  font-weight: bold;
+  font-size: 14px;
+  margin-right: 20px;
+  color:#057d47;
+}
+.tmClosed{
+  font-weight: normal;
+  font-size: 14px;
+  margin-right: 20px;
+  color:cornflowerblue;
+  cursor: pointer;
+}
+
+#vulogRecords {
+  margin: 10px -15px;
+}
+.widthFlexGridOuter {
+  display: flex;
+  padding: 0;
+  margin: 0;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  max-width: 2000px;
+}
+.heightColumsGridOuter {
+  display: block;
+  padding: 10px;
+  margin-right:30px;
+}
+@media (min-width: 630px) {
+  .heightColumsGridOuter {
+    column-count: 2
+  }
+}
+@media (min-width: 950px) {
+  .heightColumsGridOuter {
+    column-count: 3
+  }
+}
+@media (min-width: 1300px) {
+  .heightColumsGridOuter {
+    column-count: 4
+  }
+}
+
+
+/* review from here on */
+#click_search_marks{
+  cursor: pointer;
+  color: #2060ff;
+  vertical-align: middle;
+  font-size: 14px;
+  background: white;
+  border-radius: 5px;
+  padding: 5px 10px 5px 10px;
+  display: inline-block;
+  margin-top: -25px;
+}
+.top_menu_item {
+
+}
+#click_search_filters {
+  margin-left: 20px;
+  margin-top: -4px;
+  display: inline-block;
+  color: lightgrey;
+  float: right;
+  margin-right: 60px;
+}
+#dateFormOuter {
+  float: right;
+  margin-right: 100px;
+  color: white;
+  display: none;
 }
 #theWindow {
     min-width:500px;
@@ -34,7 +122,7 @@ a {
   font-size: 12px;
   background-color: white;
   border-radius: 5px;
-  height: 380px;
+  height: 400px;
   width: 410px;
   margin: 5px;
   scroll-behavior: smooth
@@ -43,23 +131,22 @@ a {
   width: 80px;
 }
 
-
 /* CURRENT TAB*/
-#thisPage_stars_and_notes {
-  display: grid;
-  grid-template-columns: 1fr 100px;
-  padding: 5px;
-  margin: 5px;
+#thisPage_stars {
+  text-align: center;
+  margin-left:20px;
+  margin-right:20px;
+  padding-left:20px;
+  padding-top: 5px;
   border-bottom: 1px solid lightgray;
 }
-#thisPage_title {
-  font-size: 12px; 
-  color: black;
+#thisPage_domainApp, #thisPage_title {
+  font-size: 14px; 
+  font-weight: bold; 
+  color: lightgray;
   text-overflow: ellipsis;
   overflow: hidden;
-  height: 14px;
-  font-weight: bold;
-  color: cornflowerblue;
+  height: 16px;
 }
 #thisPage_details {
   width: 380px;
@@ -71,18 +158,6 @@ a {
   overflow: hidden;
 }
 
-
-#top_logo{
-    width: 55px;
-    margin-bottom: -30px;
-    margin-left: 5px;
-}
-#logo_text{
-    font-weight: bold;
-    font-size: 14px;
-    margin-right: 20px;
-    color:#057d47;
-}
 #shareOptions {
   position:absolute;
   width:150px;
@@ -101,13 +176,11 @@ a {
 #pallette {
   font-size : 9px;
   display: inline-block;
-  margin-top: 4px;
-  border-bottom: 1px solid lightgrey;
-  padding: 1px;
-  padding-bottom: 10px;
-  width: 400px;
+  margin-left: 10px;
+  margin-right: 12px;
+  margin-top: 10px;
+  padding: 1px ;
 }
-
 
 .page_title{
     padding-left: 60px;
@@ -154,6 +227,8 @@ a {
   text-align:left;
   margin-top:5px;
   margin-left: 15px;
+  margin-bottom:10px;
+  padding-bottom:20px;
   color: darkgrey;
 }
 #thisPage_Sharing, #highlights_area, #thisPage_details, #thisPage_Settings {
@@ -288,6 +363,7 @@ a {
 }
 .longcepsButt {
   border: 1px solid lightgrey;
+  background-color: white;
   border-radius: 3px;
   font-size: 9px;
   color: darkgrey;
@@ -305,12 +381,7 @@ a {
   width:100%;
   text-align: center;
 }
-#click_search_history, #click_search_marks{
-    cursor: pointer;
-    color: #2060ff;
-     vertical-align: top;
-    font-size: 14px;
-}
+
 .vulog_time {
     color: rgb(151, 156, 160);
     width: 40px;
@@ -355,11 +426,9 @@ a {
     margin-top: -20px;
 }
 .vulog_title_subtle {
-  padding-top: 20px;
-  font-size: medium;
-  font-weight: bold;
+  font-size: 14px;
   color: yellowgreen;
-  display: block;
+  margin-top: 15px;
 }
 .vulog_title_emph {
     font-weight: bold;
@@ -530,85 +599,4 @@ a {
 }
 .warnOnFullPage {
     margin-top: 40px;
-}
-
-/* used on boath may be */
-
-#vulog_overlay_outer {
-  font-family: "Lucida Sans Unicode", "Helvetica Neue", "Arial", sans-serif;
-  position:fixed;
-  font-size:12px;
-  top:5px;
-  right:5px;
-  color:yellowgreen;
-  background-color: white;
-  border-radius: 5px;
-  border: 2px double yellowgreen;
-  height: fit-content;
-  max-height:80%;
-  overflow: scroll;
-  width:200px;
-  z-index:999990;
-  padding:5px;
-  cursor: crosshair;
-}
-.vulog_overlay_stars {
-  width:30px;
-  height:30px;
-  margin-right:20px;
-  cursor:pointer;
-  display:inline-block;
-}
-
-
-
-/* iOS and Non iOs */
-
-#vulog_overlay_savenotes {
-  width:100%;
-  text-align:center;
-  font-size: 10px;
-}
-.vulog_overlay_grey{
-  color:grey;
-}
-.vulog_overlay_green{
-  color:yellowgreen;
-  cursor: pointer;
-}
-.vulog_overlay_butt{
-  text-align: center;
-  cursor: pointer;
-  border-radius:3px;
-  border:1px solid yellowgreen;
-  background-color: whitesmoke;
-  margin:5px;
-  margin-bottom: 20px;
-  padding:3px;
-  line-height: normal;
-  overflow: hidden;
-  font-weight: normal;
-}
-.normheight {
-  line-height: normal;
-}
-.boldtext {
-  font-weight: bold;
-}
-#vulog_overlay_errMsg {
-  font-family: "Lucida Sans Unicode", "Helvetica Neue", "Arial", sans-serif;
-  font-size:14px;
-  color:indianred;
-  text-emphasis: bold;
-}
-.vulogAddToInboxConfirm {
-  position:absolute;
-  width:150px;
-  min-width:150px;
-  background-color: white;
-  border: 1px solid yellowgreen;
-  border-radius: 3px;
-  text-align: center;
-  z-index:99999;
-  padding-top: 20px;
 }

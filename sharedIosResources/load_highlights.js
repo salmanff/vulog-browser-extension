@@ -1,110 +1,93 @@
 // load_highlights.js
-// Compare iosApp vs ChromeExtension  - verified against iosApp 2022-10
+// Compare iosApp vs ChromeExtension  - verified against iosApp 2022-07-05
 
 // Highligher FUNCTIONS from github.com/jeromepl/highlighter
 
-/* global chrome, vulogOverlayGlobal, overlayUtils,  showVulogOverlay, highlightFromSelection, mapColor, HIGHLIGHT_CLASS */
+/* global chrome, vState, overlayUtils,  showVulogOverlay, highlightFromSelection, mapColor, HIGHLIGHT_CLASS */
+let freezrMeta = null // used to pass onto overlay => utils to see if isOwnComment
 
 const initiateHighlights = function () {
-  if (!isiframe()) {
-    // onsole.log('initiateHighlights ')
-    const overlayOuter = overlayUtils.makeEl('div', 'vulog_overlay_outer', null, '')
+  if (!vState.pageInfoFromPage.isiframe) {
+    const overlayOuter = overlayUtils.makeEl('div', 'vulog_overlay_outer', 'cardOuter', '')
     overlayOuter.style.display = 'none'
     document.body.appendChild(overlayOuter)
 
-    chrome.runtime.sendMessage({ purl: vulogOverlayGlobal.pageInfoFromPage.purl, msg: 'getMarkFromVulog' }, function (response) {
-      let showthis = null
+    chrome.runtime.sendMessage({ purl: vState.pageInfoFromPage.purl, msg: 'getMarkFromVulog' }, function (response) {
       if (!response || response.error) {
-        console.warn(response ? response : 'No response from vulog extension - internal error?')
+        console.warn(response || 'No response from vulog extension - internal error?')
       } else {
-        if (response.mark) {
-          vulogOverlayGlobal.self_mark = response.mark
-          showthis = 'self_mark'
-        }
-        if (response.redirectedmark) {
-          vulogOverlayGlobal.redirect_mark = response.redirectedmark
-          showthis = 'redirect_mark'
-        }
+        freezrMeta = response.freezrMeta
+        if (response.mark) vState.ownMark = response.mark
+        if (response.redirectmark) vState.redirectmark = response.redirectmark
+        if (response.defaultHashTag) vState.defaultHashTag = response.defaultHashTag
         if (response.messages && response.messages.length > 0) {
-          vulogOverlayGlobal.messages = response.messages
-          showthis = showthis || 'messages_0'
-        }
-        // https://www.w3resource.com/javascript-exercises/fundamental/javascript-fundamental-exercise-171.php
-        const parseCookie = str =>
-          str
-            .split(';')
-            .map(v => v.split('='))
-            .reduce((acc, v) => {
-              if (v && v[0] && v[1]) acc[decodeURIComponent(v[0].trim())] = decodeURIComponent(v[1].trim())
-              return acc
-            }, {})
-        const cookies = parseCookie(document.cookie)
-        if (cookies.vulog_show) {
-          showthis = cookies.vulog_show
-          if (!showthis || showthis === 'none') {
-            showthis = 'none'
-            vulogOverlayGlobal.shown_highlight = 'none'
-          }
-          if (showthis === 'self') showthis = 'self_mark'
-          if (showthis === 'redirect' && vulogOverlayGlobal.redirect_mark) showthis = 'redirect_mark'
-        }
-      }
-      if (!showthis) showthis = 'none'
-      if (showthis) document.cookie = 'vulog_show=' + showthis + '; expires= ' + (new Date(new Date().getTime() + 1000)).toUTCString()
-      var displayErrs = showHighlights(showthis)
-      var errCount = 0
-      for (const anErr in displayErrs) { if (anErr && anErr.err) errCount++ }
-      vulogOverlayGlobal.showthis = showthis
-      if (errCount > 0) console.warn('errors are ', { errCount, displayErrs })
-      if (errCount > 0) {
-        if (showthis === 'self_mark') {
-          chrome.runtime.sendMessage({ purl: vulogOverlayGlobal.pageInfoFromPage.purl, msg: 'marksDisplayErrs', display_errs: displayErrs }, function (response) {
-            // onsole.log(response)
+          let itemJson = null
+          response.messages.forEach(item => {
+            if (!item.record) {
+              console.warn('no recrod to merge for ', item)
+            } else if (!itemJson) {
+              itemJson = convertDownloadedMessageToRecord(item)
+            } else {
+              itemJson = mergeMessageRecords(itemJson, item)
+            }
           })
+          vState.messageMark = itemJson
+        } else {
+          vState.messageMark = null
         }
-        showVulogOverlay('Some errors occured in displaying highlights. ' + errCount + (errCount === 1 ? ' highlight was not shown.' : ' highlights were not shown.'))
-      } else if (response && (response.redirectedmark || (response.messages && response.messages.length > 0))) {
-        showVulogOverlay()
+        vState.showThis = (response.showThisInoverlay?.show && hasHighlights(vState[response.showThisInoverlay?.show])) ? response.showThisInoverlay.show : 'ownMark'
+        if (response.showThisInoverlay?.show && ['ownMark', 'messageMark', 'redirectmark'].indexOf(response.showThisInoverlay?.show) < 0) {
+          console.warn('showThis has to be one of ownMark, messageMark or redirectmark')
+        }
+
+        vState.displayErrs = showHighlights()
+        if (vState.displayErrs && vState.displayErrs.length > 0) {
+          chrome.runtime.sendMessage({ purl: vState.pageInfoFromPage.purl, msg: 'marksDisplayErrs', display_errs: vState.displayErrs }, function (response) {
+            // onsole.log(response)
+            vState.showVulogOverlay()
+          })
+          // vState.showVulogOverlay('Some errors occured in displaying highlights. ' + errCount + (errCount === 1 ? ' highlight was not shown.' : ' highlights were not shown.'))
+        } else if (vState.ownMark || vState.redirectmark || vState.messageMark) {
+          vState.showVulogOverlay()
+        } else {
+          console.warn('vState NOT showing ovelay  ', { haveMark: Boolean(vState.ownMark), haveMessages: Boolean(vState.messageMark), haveRedirect: Boolean(vState.redirectmark) })
+        }
       }
     })
   }
 }
-const showHighlights = function (showthis) {
-  var displayErrs = []
-  // onsole.log('showing highliughts for showthis of ' + showthis)
+const hasHighlights = function (mark) {
+  return (mark?.vHighlights && mark.vHighlights.length > 0)
+}
+const showHighlights = function () {
+  if (!vState.showThis) console.warn('No showThis ? SNBH')
+  const showThis = vState.showThis || 'ownMark'
+  const displayErrs = []
   // let color = 'yellowgreen'
-  let toshow = null
-  if (showthis && showthis !== 'none') {
-    if (showthis.split('_')[0] === 'messages') {
-      toshow = vulogOverlayGlobal.messages[parseInt(showthis.split('_')[1])]
-      toshow = toshow && toshow.record ? toshow.record : null
-    } else {
-      toshow = vulogOverlayGlobal[showthis]
-    }
-    // onsole.log('showHighlights', { toshow, vulogOverlayGlobal })
+  const toshow = vState[showThis]
 
-    // if (showthis === 'redirect_mark') color = 'yellow'
-    if (toshow && toshow.vHighlights && toshow.vHighlights.length > 0) {
-      const highlights = JSON.parse(JSON.stringify(toshow.vHighlights))
-      highlights.forEach((aHighlight, idx) => {
-        if (!loadHighlights(aHighlight)) {
-          chrome.runtime.sendMessage({ msg: 'hlightDisplayErr', hlightId: aHighlight.id, url: window.location.href }, function (response) {
-            // onsole.log('hlightDisplayErr sent to background - ', { response })
-          })
-          displayErrs.push({ err: true, idx: idx, id: aHighlight.id }) // old versiona s of ovt 24 2022
-        }
-        // else if (aHighlight.display_err) displayErrs.push({ err: false, idx: idx, id: aHighlight.id })
-      })
-      vulogOverlayGlobal.shown_highlight = showthis
-      vulogOverlayGlobal.shown_highlight_details = toshow.vHighlights
-    }
+  // if (showThis === 'redirect_mark') color = 'yellow'
+  if (hasHighlights(toshow)) {
+    // const highlights =  JSON.parse(JSON.stringify(toshow.vHighlights))
+    toshow.vHighlights.forEach((aHighlight, idx) => {
+      const highlightCopy = JSON.parse(JSON.stringify(aHighlight))
+      if (!loadHighlights(highlightCopy)) {
+        console.warn('Error showing highlight: ', { highlightCopy })
+        chrome.runtime.sendMessage({ msg: 'hlightDisplayErr', hlightId: aHighlight.id, url: window.location.href }, function (response) {
+        })
+        displayErrs.push({ err: true, idx: idx, id: aHighlight.id }) // old versiona s of ovt 24 2022
+      }
+      // else if (aHighlight.display_err) displayErrs.push({ err: false, idx: idx, id: aHighlight.id })
+    })
   } else {
-    vulogOverlayGlobal.shown_highlight = 'self_mark'
+    console.warn('No highligths to show')
   }
+
   return displayErrs
 }
 
 function loadHighlights (highlightObj) {
+  // onsole.log('loadHighlights', highlightObj)
   var selection = {
     anchorNode: elementFromQuery(highlightObj.anchorNode, 'anchor', highlightObj.string),
     anchorOffset: highlightObj.anchorOffset,
@@ -120,12 +103,19 @@ function loadHighlights (highlightObj) {
     console.warn('NO Anchor or focusNode...', selection)
     return false
   } else {
+    // const success = highlightFromSelection(selectionString, container, selection, mapColor(highlightObj.color), highlightObj.id) // returns true on success or false on err
     const success = highlightFromSelection(highlightObj, selection, container) // returns true on success or false on err
+
+    if (!success) {
+      console.warn('could not load highlight ', selection)
+    } else {
+      // onsole.log('success in highlighting')
+    }
     return success
   }
 }
 function elementFromQuery (storedQuery, eltype, thestring) {
-  // console.log('elementFromQuery',{thestring})
+  // onsole.log('elementFromQuery',{thestring})
   let lastNode
   var aquery = storedQuery[0]
   if (!storedQuery || storedQuery.length === 0) console.warn('NO Query sent')
@@ -175,10 +165,13 @@ if (
   document.readyState === 'complete' ||
   (document.readyState !== 'loading' && !document.documentElement.doScroll)
 ) {
+  // 2023-04 - reduce times - if notintiating highlights recheck to see if reduced too much - from 10s & 5s respectively
   setTimeout(function () {
     // onsole.log('going to initiate highlights')
     initiateHighlights()
-  }, 5000)
+  }, 1000) // previousl 2
 } else {
-  document.addEventListener('DOMContentLoaded', initiateHighlights)
+    setTimeout(function () {
+      document.addEventListener('DOMContentLoaded', initiateHighlights)
+  }, 3000) // previousl 4
 }

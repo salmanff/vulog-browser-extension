@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <link href="/sharedDrawTools//viewInTab.css" rel="stylesheet">
+    <link href="/sharedDrawTools//datepicker.css" rel="stylesheet">
+    <link href="/sharedIosResources/overlay.css" rel="stylesheet">
+    <link href="/freezr/freezr_core.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/font-awesome.min.css">
+
+</head>
+<body>
+
+  <div id="viewInTabWindow">
+    <div id="topBar" class="topBarTabs topBarViewInTab">
+        <img id="top_logo" src="/static/hipercardsLogo.png"/>
+        <span id="logo_text">hiper.cards</span>
+        <span id="click_gototab_marks" class="tmChosen">Bookmarks</span>
+        <span id="click_gototab_history" class="tmClosed">History</span>
+        <span id="click_gototab_tabs" class="tmClosed">Tabs </span>
+        <span id="click_gototab_messages" class="tmClosed">Messages</span>
+        <span style="display:none" id="click_gototab_sentMsgs" class="tmClosed">Messages Sent</span>
+        <span style="display:none" id="click_gototab_feed" class="tmClosed">Feed</span>
+        <span id="click_gototab_settings" class="tmClosed">Settings</span>
+
+    </div>
+
+
+
+    
+
+    <div id="warning_outer" class="warning_outer warnOnFullPage">
+      <div id="click_closeWarnings"></div>
+      <div id="warnings"></div>
+    </div>
+ 
+
+    <br>
+    <div id="idSearchMarksBox" class="inputBox" contenteditable="true" data-placeholder=" &nbsp; Search"></div>
+    <div id="click_search_marks">Search</div>
+    <div id="click_search_filters"></div>
+    <div id="dateFormOuter">
+      <div id="dateFormInner">
+        Filters: 
+        <div class="form-container">
+          <form>
+            <i class="far fa-calendar-alt"></i>
+            <input type="text" placeholder="Latest date" id="dateInput" class="date-input">
+          </form>
+        </div>
+      </div>
+    </div>
+    
+    <br/>
+    <div id="vulogRecords"></div>
+    <div id="spinner"></div>
+    <div id="morePages"></div>
+  </div>
+
+  <script src="/main/manifest.js"></script>
+  <script src="/freezr/freezr_app_init.js"></script>
+  <script src="/freezr/freezr_core.js"></script>
+  <script src="/freezr/freezr_app_post_scripts.js"></script>
+
+  <script src="/sharedDrawTools//dgelements.js"></script>
+  <script src="/sharedIosResources/utils.js"></script>
+  <script src="/sharedIosResources/overlay_constants.js"></script>
+  <script src="/sharedDrawTools//drawutils.js"></script>
+  <script src="/sharedDrawTools//lister.js"></script>
+  <script src="/main/view.js"></script>
+  <script src="/sharedDrawTools//datepicker.js"></script>
+
+</body>
+</html>

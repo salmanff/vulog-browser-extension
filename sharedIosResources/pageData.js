@@ -1,9 +1,9 @@
 // pageData.js - part of vulog
 // changed 2022-04
 // Compare iosApp vs ChromeExtension - verified 2022-07-05
-
+ 
 /* exported VuPageData */
-/* global pureUrlify, domainAppFromUrl, addToListAsUniqueItems, cleanTextForEasySearch, startsWith, endsWith, hostFromUrl */
+/* global pureUrlify, resetVulogKeyWords, domainAppFromUrl, startsWith, endsWith, hostFromUrl */
 
 function VuPageData (options) {
   if (!options) options = { ignoreNonStandard: true, ignoreCookies: false }
@@ -21,7 +21,6 @@ const getAllPageTags = function (options) {
     vCreated: new Date().getTime()
   }
   if (document.getElementsByTagName('title') && document.getElementsByTagName('title')[0]) parsedTags.title = document.getElementsByTagName('title')[0].innerText
-  // let oldVersion = (document.getElementsByTagName('title') && document.getElementsByTagName('title')[0]) ? document.getElementsByTagName('title')[0].innerText : 'no title at beg'
 
   if (haveBody()) {
     const allMetas = document.getElementsByTagName('meta')
@@ -125,8 +124,6 @@ const addMetaTotags = function (parsedTags, allMetas, options = { ignoreNonStand
   parsedTags.other = {}
 
   // console 2020 todo review all tags
-  parsedTags.vSearchWords = renderUrlToCleanedText(parsedTags.url)
-  parsedTags.vSearchWords = addToListAsUniqueItems(parsedTags.vSearchWords, renderUrlToCleanedText(parsedTags.referrer))
 
   // get all meta data
   let mName
@@ -140,8 +137,8 @@ const addMetaTotags = function (parsedTags, allMetas, options = { ignoreNonStand
         if (EQUIV_NAMES[mName]) {
           if (mName.indexOf('vulog') === 0) {
             console.warn('some body is trying to play nasty tricks on vulog. ;)')
-          } else if (['keywords'].indexOf(EQUIV_NAMES[mName]) > -1) { // Add all unique words
-            parsedTags[EQUIV_NAMES[mName]] = addToListAsUniqueItems(parsedTags[EQUIV_NAMES[mName]], cleanTextForEasySearch(m.getAttribute('content')).split(' '))
+          // } else if (['keywords'].indexOf(EQUIV_NAMES[mName]) > -1) { // Add all unique words
+          //   parsedTags[EQUIV_NAMES[mName]] = addToListAsUniqueItems(parsedTags[EQUIV_NAMES[mName]], cleanTextForEasySearch(m.getAttribute('content')).split(' '))
           } else if (EQUIV_NAMES[mName] === 'domainApp') {
             parsedTags.domainApp = (mName === 'application-name' || !parsedTags.domainApp) ? m.getAttribute('content') : parsedTags.domainApp
           } else if (EQUIV_NAMES[mName] === mName) {
@@ -149,7 +146,7 @@ const addMetaTotags = function (parsedTags, allMetas, options = { ignoreNonStand
           } else if (!parsedTags[EQUIV_NAMES[mName]]) {
             parsedTags[EQUIV_NAMES[mName]] = m.getAttribute('content')
           }
-          parsedTags.vSearchWords = addToListAsUniqueItems(parsedTags.vSearchWords, cleanTextForEasySearch(m.getAttribute('content')).split(' '))
+          // parsedTags.vSearchWords = addToListAsUniqueItems(parsedTags.vSearchWords, cleanTextForEasySearch(m.getAttribute('content')).split(' '))
         } else if (IGNORE_NAMES.indexOf(mName) < 0 && !options.ignoreNonStandard) {
           parsedTags.other[mName.split('.').join('_')] = m.getAttribute('content')
           if (NON_STD_NAMES.indexOf(mName) < 0) parsedTags.temp_unknown_tags.push(mName)
@@ -166,15 +163,18 @@ const addMetaTotags = function (parsedTags, allMetas, options = { ignoreNonStand
     parsedTags.fj_modified_locally = new Date().getTime()
     if (!options.ignoreCookies) parsedTags.vulog_sub_pages = []
   }
+  parsedTags.vSearchString = resetVulogKeyWords(parsedTags)
+  // parsedTags.vSearchWords = parsedTags.vSearchString.split(' ') // kept temprarily as transition
+
   return parsedTags
 }
 
 // Utility functions specific to pageData
-const renderUrlToCleanedText = function (aUrl) {
-  return addToListAsUniqueItems([], cleanTextForEasySearch(aUrl),
-    function (x) { return ((x + '').length === 1) ? '' : x })
-  // words in title url query (not www) author description url
-}
+// const renderUrlToCleanedText = function (aUrl) {
+//   return addToListAsUniqueItems([], cleanTextForEasySearch(aUrl),
+//     function (x) { return ((x + '').length === 1) ? '' : x })
+//   // words in title url query (not www) author description url
+// }
 const haveBody = function () {
   return Boolean(document.getElementsByTagName('BODY') && document.getElementsByTagName('BODY')[0] && document.getElementsByTagName('BODY')[0].scrollHeight)
 }
